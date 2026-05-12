@@ -1,3 +1,15 @@
+# ── Paper drafts (keep off public repo during review) ────────────────────────
+Paper.md
+PaperEnglish.md
+Alignment.md
+Bugfix.md
+PaperList.md
+paperfix.md
+论文框架.md
+论文框架_backup.md
+期刊论文.md
+back/
+
 # ── Android build outputs ─────────────────────────────────────────────────────
 /build/
 app/build/
