@@ -1,0 +1,47 @@
+# ── Android build outputs ─────────────────────────────────────────────────────
+/build/
+app/build/
+app/.cxx/
+
+# ── Gradle ────────────────────────────────────────────────────────────────────
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# ── Android local config (machine-specific) ───────────────────────────────────
+local.properties
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+
+# ── Python virtualenv ─────────────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+
+# ── modelback/ — local backup dir, redundant with assets; excluded entirely ───
+modelback/
+
+# ── Training datasets (large, reference Roboflow source instead) ──────────────
+data/train/
+data/valid/
+data/hardneg_pool/
+
+# ── Training / experiment run outputs ─────────────────────────────────────────
+runs/
+
+# ── Backup files ──────────────────────────────────────────────────────────────
+*.bak
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logcat dumps (runtime, not source) ───────────────────────────────────────
+logcat.txt
+
+# ── Large video files (exceed GitHub 100 MB limit) ───────────────────────────
+*.mp4
+*.avi
+*.mov

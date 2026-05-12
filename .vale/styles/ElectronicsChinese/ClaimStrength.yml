@@ -1,0 +1,17 @@
+extends: existence
+message: "该判断偏强化表达，建议补充具体指标、对比对象或范围说明：%s。"
+level: suggestion
+ignorecase: false
+tokens:
+  - 显著改善
+  - 显著提升
+  - 显著减少
+  - 显著降低
+  - 显著增强
+  - 明显优于
+  - 更低门槛
+  - 门槛更低
+  - 更强可用性
+  - 可用性更强
+  - 更高可部署性
+  - 可部署性更高

@@ -1,0 +1,13 @@
+extends: substitution
+message: "统一术语：建议使用“%s”替代“%s”。"
+level: warning
+ignorecase: false
+swap:
+  资源受限设备: 资源受限 Android 设备
+  资源受限终端: 资源受限 Android 设备
+  param-bin: param/bin 文件对
+  param bin: param/bin 文件对
+  top-k: Top-K
+  端侧验证: 设备端验证
+  端侧推理引擎: 设备端推理引擎
+  端侧部署: 设备端部署

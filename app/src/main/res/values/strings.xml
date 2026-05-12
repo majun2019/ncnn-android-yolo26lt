@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ncnn-android-yolo26</string>
+    <string-array name="task_array">
+        <item>detect</item>
+        <item>segment</item>
+        <item>pose</item>
+        <item>classify</item>
+        <item>obb</item>
+    </string-array>
+    <string-array name="cpugpu_array">
+        <item>CPU</item>
+        <item>GPU</item>
+        <item>turnip</item>
+    </string-array>
+</resources>
