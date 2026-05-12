@@ -14,6 +14,9 @@ back/
 .vale/
 .vale.ini
 
+# ── Local test notes (not project code) ──────────────────────────────────────
+test/
+
 # ── Android build outputs ─────────────────────────────────────────────────────
 /build/
 app/build/
