@@ -10,6 +10,10 @@ paperfix.md
 期刊论文.md
 back/
 
+# ── Vale linting config (local writing tool, not project code) ───────────────
+.vale/
+.vale.ini
+
 # ── Android build outputs ─────────────────────────────────────────────────────
 /build/
 app/build/
