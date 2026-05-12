@@ -13,6 +13,9 @@ back/
 # ── Vale linting config (local writing tool, not project code) ───────────────
 .vale/
 .vale.ini
+Alignment.md
+.markdownlint.jsonc
+cspell.json
 
 # ── Local test notes (not project code) ──────────────────────────────────────
 test/
