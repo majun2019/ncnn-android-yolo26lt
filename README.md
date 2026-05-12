@@ -190,6 +190,13 @@ ncnn-android-yolo26LT/
 
 ---
 
+## 相关论文
+
+> 《面向资源受限 Android 设备的基于 NCNN 的多任务视觉推理部署与一致性诊断框架》  
+> 投稿至 **Electronics**（MDPI）。
+
+---
+
 ## Dependencies
 
 | Library | Version | Link |
