@@ -7,13 +7,6 @@
 - 自动生成空标签 txt；
 - 可一键注入到 data/train 继续微调。
 
-示例：
-  python scripts/mine_hard_negatives.py \
-      --model runs/calib/safehat_confcal_v2/weights/best.pt \
-      --images-root data/train/images \
-      --labels-root data/train/labels \
-      --output-root data/hardneg_pool/v3 \
-      --min-max-conf 0.75 --min-count 2 --topk 600 --inject-train
 """
 
 from __future__ import annotations

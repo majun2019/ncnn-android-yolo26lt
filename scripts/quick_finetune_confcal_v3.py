@@ -4,12 +4,6 @@
 - 以 v2 best.pt 为基线，短程训练吸收 hard negatives；
 - 训练完成后可选导出 NCNN 并覆盖 Android assets。
 
-示例：
-  python scripts/quick_finetune_confcal_v3.py \
-      --base-model runs/calib/safehat_confcal_v2/weights/best.pt \
-      --data-yaml scripts/safehat.yaml \
-      --epochs 12 --batch 4 --imgsz 640 \
-      --export-assets
 """
 
 from __future__ import annotations

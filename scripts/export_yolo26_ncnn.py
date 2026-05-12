@@ -7,14 +7,10 @@ YOLO26 NCNN 导出脚本 - 支持方案一和方案二
   - 需要NMS后处理
   - 输出: (8400, 84) for detection
 
-方案二：One-to-One Head (end2end=True) 【推荐】
+方案二：One-to-One Head (end2end=True) 
   - 真正的端到端推理
   - 无需NMS，速度更快（最高提升43%）
   - 输出: (300, 6) for detection
-
-使用方法:
-    pip install ultralytics
-    python export_yolo26_ncnn.py
 
 输出文件将保存在对应目录下
 """

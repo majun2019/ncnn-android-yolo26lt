@@ -5,8 +5,6 @@ YOLO26 自定义数据集训练脚本
 - Hardhat, Mask, No-Hardhat, No-Mask, No-Safety Vest
 - Person, Safety Cone, Safety Vest, Machinery, Vehicle
 
-使用方法：
-    python yolo_26_train.py
 """
 
 from ultralytics import YOLO

@@ -3,10 +3,7 @@
 YOLO26 NCNN输出格式验证工具
 
 用于验证导出的NCNN模型输出格式是否符合预期。
-需要安装 ncnn python 绑定或使用 pyncnn。
 
-使用方法：
-    python verify_ncnn_output.py --model yolo26n.ncnn.param
 """
 
 import os

@@ -1,18 +1,5 @@
 #!/usr/bin/env python3
-"""
-训练/导出侧预检工具（SafeHat 项目）
 
-目标：在把模型放进 Android 前，先回答 4 个问题：
-1) 数据集标签是否越界/损坏？
-2) 数据配置 nc 与 names 是否一致？
-3) NCNN 导出模型实际输出形状是什么？（E2E 还是 O2M）
-4) 模型类别数是否和数据集类别数一致？
-
-可选：对比 PT 与 NCNN 在同一批图片上的检测数量分布。
-
-用法示例：
-  python scripts/preflight_safehat_pipeline.py --run-compare
-"""
 
 from __future__ import annotations
 
