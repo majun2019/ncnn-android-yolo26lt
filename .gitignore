@@ -30,7 +30,7 @@ app/.cxx/
 gradle/wrapper/gradle-wrapper.jar
 
 # ── Android local config (machine-specific) ───────────────────────────────────
-local.properties
+# local.properties — 已允许上传，不再忽略
 
 # ── IDE ───────────────────────────────────────────────────────────────────────
 .idea/
@@ -61,9 +61,13 @@ Thumbs.db
 desktop.ini
 
 # ── Logcat dumps (runtime, not source) ───────────────────────────────────────
-logcat.txt
+# logcat.txt — 已允许上传，不再忽略
 
 # ── Large video files (exceed GitHub 100 MB limit) ───────────────────────────
 *.mp4
 *.avi
 *.mov
+
+# ── Root-level model weights (explicitly allowed) ────────────────────────────
+!/yolo26n.pt
+!/best.pt
