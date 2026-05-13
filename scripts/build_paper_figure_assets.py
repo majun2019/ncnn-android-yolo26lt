@@ -3,47 +3,39 @@
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "runs" / "paper_figures"
+TESTPICS_DIR = ROOT / "testpics"
 
-BACKGROUND = (250, 249, 245)
-LABEL_BG = (35, 40, 48)
-LABEL_FG = (245, 247, 250)
-BORDER = (198, 202, 208)
-PANEL_BORDER = 2
-LABEL_HEIGHT = 34
-OUTER_PADDING = 16
+BACKGROUND = (255, 255, 255)
+BORDER = (180, 185, 192)
+PANEL_BORDER = 1
+OUTER_PADDING = 0
+
+# Pixels to crop from top of each cell in val_batch grid to remove embedded
+# filename labels (Ultralytics draws filenames at y~0 inside each cell).
+# The label background occupies y=2-12 and the text descenders reach y~44;
+# 50 px gives a safe margin above actual image content.
+GRID_CROP_TOP = 50
 
 FIGURES = [
     {
-        "label": "08A TRAIN",
         "source": ROOT / "runs" / "detect" / "runs" / "train" / "yolo26n_safehat" / "results.png",
         "target": OUTPUT_DIR / "figure8a_train_results_styled.png",
+        "journal_name": "Figure_8a.png",
         "max_width": 1400,
     },
     {
-        "label": "08B VAL",
         "source": ROOT / "runs" / "detect" / "runs" / "train" / "yolo26n_safehat" / "val_batch0_pred.jpg",
         "target": OUTPUT_DIR / "figure8b_val_pred_styled.png",
+        "journal_name": "Figure_8b.png",
         "max_width": 1240,
+        "clean_grid": True,  # strip per-cell filename labels
     },
 ]
-
-
-def load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    candidates = [
-        Path("C:/Windows/Fonts/arialbd.ttf"),
-        Path("C:/Windows/Fonts/arial.ttf"),
-        Path("C:/Windows/Fonts/segoeuib.ttf"),
-        Path("C:/Windows/Fonts/segoeui.ttf"),
-    ]
-    for path in candidates:
-        if path.exists():
-            return ImageFont.truetype(str(path), size=size)
-    return ImageFont.load_default()
 
 
 def fit_image(image: Image.Image, max_width: int) -> Image.Image:
@@ -53,29 +45,45 @@ def fit_image(image: Image.Image, max_width: int) -> Image.Image:
     return image.resize((max_width, target_height), Image.Resampling.LANCZOS)
 
 
-def framed_figure(image: Image.Image, label: str, font: ImageFont.FreeTypeFont | ImageFont.ImageFont) -> Image.Image:
-    panel_width = image.width + OUTER_PADDING * 2
-    panel_height = image.height + OUTER_PADDING * 2 + LABEL_HEIGHT
+def framed_figure(image: Image.Image) -> Image.Image:
+    panel_width = image.width + PANEL_BORDER * 2
+    panel_height = image.height + PANEL_BORDER * 2
     canvas = Image.new("RGB", (panel_width, panel_height), BACKGROUND)
     draw = ImageDraw.Draw(canvas)
-
-    draw.rectangle((0, 0, panel_width - 1, panel_height - 1), outline=BORDER, width=1)
-    draw.rectangle((PANEL_BORDER, PANEL_BORDER, panel_width - PANEL_BORDER - 1, LABEL_HEIGHT), fill=LABEL_BG)
-    draw.rectangle(
-        (PANEL_BORDER, LABEL_HEIGHT, panel_width - PANEL_BORDER - 1, panel_height - PANEL_BORDER - 1),
-        outline=BORDER,
-        width=1,
-    )
-    draw.text((14, 8), label, fill=LABEL_FG, font=font)
-    canvas.paste(image, (OUTER_PADDING, LABEL_HEIGHT + OUTER_PADDING))
+    draw.rectangle((0, 0, panel_width - 1, panel_height - 1), outline=BORDER, width=PANEL_BORDER)
+    canvas.paste(image, (PANEL_BORDER, PANEL_BORDER))
     return canvas
 
 
-def build_single_assets(font: ImageFont.FreeTypeFont | ImageFont.ImageFont) -> None:
+def clean_val_grid(image: Image.Image, cols: int = 3) -> Image.Image:
+    """Remove per-cell filename text from a Ultralytics validation batch mosaic.
+
+    Ultralytics renders the source filename at the top-left of every cell
+    in the NxN mosaic.  We slice each cell, crop off the top GRID_CROP_TOP
+    rows, and reassemble.
+    """
+    W, H = image.size
+    rows = H // (W // cols)  # typically equal to cols for square mosaics
+    cell_w = W // cols
+    cell_h = H // rows
+    out_cell_h = cell_h - GRID_CROP_TOP
+    out = Image.new("RGB", (W, rows * out_cell_h), BACKGROUND)
+    for r in range(rows):
+        for c in range(cols):
+            x0, y0 = c * cell_w, r * cell_h
+            cell = image.crop((x0, y0, x0 + cell_w, y0 + cell_h))
+            cell_clean = cell.crop((0, GRID_CROP_TOP, cell_w, cell_h))
+            out.paste(cell_clean, (c * cell_w, r * out_cell_h))
+    return out
+
+
+def build_single_assets() -> None:
     for figure in FIGURES:
         image = Image.open(figure["source"]).convert("RGB")
+        if figure.get("clean_grid"):
+            image = clean_val_grid(image)
         image = fit_image(image, figure["max_width"])
-        styled = framed_figure(image, figure["label"], font)
+        styled = framed_figure(image)
         styled.save(figure["target"], format="PNG")
         print(f"saved: {figure['target']}")
 
@@ -90,11 +98,29 @@ def export_montage_png() -> None:
     print(f"saved: {target}")
 
 
+def export_to_testpics() -> None:
+    """Copy/generate journal-named copies to testpics/ (MDPI naming: Figure_N.png)."""
+    TESTPICS_DIR.mkdir(parents=True, exist_ok=True)
+    # 8a and 8b come from the styled outputs already built
+    for figure in FIGURES:
+        src = figure["target"]
+        dst = TESTPICS_DIR / figure["journal_name"]
+        img = Image.open(src)
+        img.save(dst, format="PNG")
+        print(f"testpics: {dst}")
+    # 8c
+    src_8c = OUTPUT_DIR / "figure8c_five_task_montage.png"
+    dst_8c = TESTPICS_DIR / "Figure_8c.png"
+    img = Image.open(src_8c)
+    img.save(dst_8c, format="PNG")
+    print(f"testpics: {dst_8c}")
+
+
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    font = load_font(18)
-    build_single_assets(font)
+    build_single_assets()
     export_montage_png()
+    export_to_testpics()
 
 
 if __name__ == "__main__":
