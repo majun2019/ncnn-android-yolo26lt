@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="180mm" height="272mm" viewBox="0 0 1800 2720" role="img" aria-labelledby="title desc">
+  <title id="title">Figure 3. End-to-End Closed-Loop Pipeline from SafeHat Training to Android Deployment</title>
+  <desc id="desc">An end-to-end SafeHat pipeline from dataset definition and model fine-tuning to NCNN export, Android asset generation, application execution, logging, diagnosis, latency collection, and paper evidence.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f9fbfd"/>
+      <stop offset="100%" stop-color="#eef4f7"/>
+    </linearGradient>
+    <linearGradient id="modelStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#edf5ff"/>
+      <stop offset="100%" stop-color="#dceafa"/>
+    </linearGradient>
+    <linearGradient id="verificationStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ebf8f0"/>
+      <stop offset="100%" stop-color="#daf0e2"/>
+    </linearGradient>
+    <linearGradient id="androidStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff6e4"/>
+      <stop offset="100%" stop-color="#ffe8bd"/>
+    </linearGradient>
+    <linearGradient id="diagnosisStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f2f7fb"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="9" stdDeviation="9" flood-color="#23303a" flood-opacity="0.14"/>
+    </filter>
+    <marker id="arrow" markerWidth="22" markerHeight="22" refX="18" refY="11" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2,2 L20,11 L2,20 Z" fill="#315b7d"/>
+    </marker>
+    <marker id="loopArrow" markerWidth="24" markerHeight="24" refX="20" refY="12" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2,2 L22,12 L2,22 Z" fill="#8a5b16"/>
+    </marker>
+    <style><![CDATA[
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 42px; font-weight: 700; fill: #17212b; }
+      .subtitle { font-family: Arial, Helvetica, sans-serif; font-size: 25px; fill: #536170; }
+      .lane { font-family: Arial, Helvetica, sans-serif; font-size: 21px; font-weight: 700; letter-spacing: 1px; fill: #667687; }
+      .stage-title { font-family: Arial, Helvetica, sans-serif; font-size: 29px; font-weight: 700; fill: #182430; }
+      .body { font-family: Arial, Helvetica, sans-serif; font-size: 22px; fill: #314151; }
+      .note { font-family: Arial, Helvetica, sans-serif; font-size: 20px; fill: #526273; }
+      .num { font-family: Arial, Helvetica, sans-serif; font-size: 26px; font-weight: 700; fill: #ffffff; }
+      .loop-title { font-family: Arial, Helvetica, sans-serif; font-size: 23px; font-weight: 700; fill: #73501b; }
+      .loop-text { font-family: Arial, Helvetica, sans-serif; font-size: 19px; fill: #5f6d78; }
+    ]]></style>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="2720" fill="url(#background)"/>
+
+  <rect x="100" y="78" width="1600" height="152" rx="18" fill="#ffffff" stroke="#d7e0ea" stroke-width="3"/>
+  <text x="900" y="136" text-anchor="middle" class="title">SafeHat Training-to-Android Deployment Closed Loop</text>
+  <text x="900" y="183" text-anchor="middle" class="subtitle">Training evidence, NCNN asset integration, real-device diagnosis, and regression summary</text>
+
+  <text x="135" y="318" text-anchor="middle" class="lane">
+    <tspan x="135" dy="0">TRAINING-SIDE</tspan>
+    <tspan x="135" dy="28">EVIDENCE</tspan>
+  </text>
+  <text x="135" y="1088" text-anchor="middle" class="lane">
+    <tspan x="135" dy="0">EXPORT AND</tspan>
+    <tspan x="135" dy="28">ASSET</tspan>
+    <tspan x="135" dy="28">INTEGRATION</tspan>
+  </text>
+  <text x="135" y="1933" text-anchor="middle" class="lane">
+    <tspan x="135" dy="0">DEPLOYMENT-SIDE</tspan>
+    <tspan x="135" dy="28">EVIDENCE</tspan>
+  </text>
+
+  <!-- Stage 1 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="300" width="1040" height="150" rx="20" fill="url(#modelStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="338" cy="375" r="36" fill="#315b7d"/>
+    <text x="338" y="384" text-anchor="middle" class="num">1</text>
+    <text x="408" y="356" class="stage-title">Dataset Definition and Splits</text>
+    <text x="408" y="398" class="body">safehat.yaml + data/train | valid | test</text>
+  </g>
+  <path d="M790 464 L790 517" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Stage 2 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="532" width="1040" height="165" rx="20" fill="url(#modelStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="338" cy="614" r="36" fill="#315b7d"/>
+    <text x="338" y="623" text-anchor="middle" class="num">2</text>
+    <text x="408" y="590" class="stage-title">Fine-Tuning Workflow</text>
+    <text x="408" y="632" class="body">yolo_26_train.py / Ultralytics</text>
+    <text x="408" y="668" class="note">Hard-negative and repair feedback can be reinjected here</text>
+  </g>
+  <path d="M790 711 L790 764" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Stage 3 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="779" width="1040" height="180" rx="20" fill="url(#modelStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="338" cy="869" r="36" fill="#315b7d"/>
+    <text x="338" y="878" text-anchor="middle" class="num">3</text>
+    <text x="408" y="840" class="stage-title">Selected Fine-Tuned Weight</text>
+    <text x="408" y="882" class="body">runs/detect/runs/train/yolo26n_safehat/weights/best.pt</text>
+    <text x="408" y="918" class="note">Input to the SafeHat deployment branch</text>
+  </g>
+  <path d="M790 973 L790 1026" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Stage 4 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="1041" width="1040" height="185" rx="20" fill="url(#verificationStage)" stroke="#79ad83" stroke-width="3"/>
+    <circle cx="338" cy="1134" r="36" fill="#377b45"/>
+    <text x="338" y="1143" text-anchor="middle" class="num">4</text>
+    <text x="408" y="1102" class="stage-title">NCNN Export and Structural Verification</text>
+    <text x="408" y="1144" class="body">export_yolo26_ncnn.py; verify_ncnn_output.py</text>
+    <text x="408" y="1180" class="note">Confirm output shapes, branches, and parser-facing layout</text>
+  </g>
+  <path d="M790 1240 L790 1293" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Stage 5 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="1308" width="1040" height="165" rx="20" fill="url(#verificationStage)" stroke="#79ad83" stroke-width="3"/>
+    <circle cx="338" cy="1390" r="36" fill="#377b45"/>
+    <text x="338" y="1399" text-anchor="middle" class="num">5</text>
+    <text x="408" y="1366" class="stage-title">Android Asset Generation</text>
+    <text x="408" y="1408" class="body">export_best_safehat_to_assets.py</text>
+    <text x="408" y="1444" class="note">Create Android-loadable NCNN param/bin file pairs</text>
+  </g>
+  <path d="M790 1487 L790 1540" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Stage 6 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="1555" width="1040" height="205" rx="20" fill="url(#androidStage)" stroke="#d4a047" stroke-width="3"/>
+    <circle cx="338" cy="1658" r="36" fill="#a66b15"/>
+    <text x="338" y="1667" text-anchor="middle" class="num">6</text>
+    <text x="408" y="1620" class="stage-title">Android-Ready SafeHat Assets</text>
+    <text x="408" y="1662" class="body">app/src/main/assets/yolo26n_safehat.ncnn.{param,bin}</text>
+    <text x="408" y="1698" class="note">Compatible alias: yolo26n_e2e.ncnn.{param,bin}</text>
+    <text x="408" y="1733" class="note">The alias is historical and does not imply an E2E detection head</text>
+  </g>
+  <path d="M790 1774 L790 1827" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Stage 7 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="1842" width="1040" height="165" rx="20" fill="url(#androidStage)" stroke="#d4a047" stroke-width="3"/>
+    <circle cx="338" cy="1924" r="36" fill="#a66b15"/>
+    <text x="338" y="1933" text-anchor="middle" class="num">7</text>
+    <text x="408" y="1900" class="stage-title">Android Application Execution</text>
+    <text x="408" y="1942" class="body">loadModel() -&gt; openCamera() -&gt; setOutputWindow()</text>
+    <text x="408" y="1978" class="note">Real-device loading, camera input, and rendering output</text>
+  </g>
+  <path d="M790 2021 L790 2074" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Stage 8 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="2089" width="1040" height="185" rx="20" fill="url(#diagnosisStage)" stroke="#8ca4b8" stroke-width="3"/>
+    <circle cx="338" cy="2182" r="36" fill="#315b7d"/>
+    <text x="338" y="2191" text-anchor="middle" class="num">8</text>
+    <text x="408" y="2150" class="stage-title">Diagnosis and Latency Logging</text>
+    <text x="408" y="2192" class="body">logcat + diagnose_* + collect_latency.py</text>
+    <text x="408" y="2228" class="note">Capture functional logs, repair evidence, and runtime statistics</text>
+  </g>
+  <path d="M790 2288 L790 2341" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Stage 9 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="2356" width="1040" height="185" rx="20" fill="url(#diagnosisStage)" stroke="#8ca4b8" stroke-width="3"/>
+    <circle cx="338" cy="2449" r="36" fill="#315b7d"/>
+    <text x="338" y="2458" text-anchor="middle" class="num">9</text>
+    <text x="408" y="2417" class="stage-title">Validation Evidence in the Manuscript</text>
+    <text x="408" y="2459" class="body">Figure 9, Table 8, Table 9, and Table 10</text>
+    <text x="408" y="2495" class="note">Training-side evidence appears in Figure 8(a) and Figure 8(b)</text>
+  </g>
+
+  <!-- Feedback loop -->
+  <path d="M1326 2182 C1626 2182 1648 615 1326 615" stroke="#a66b15" stroke-width="7" fill="none" marker-end="url(#loopArrow)" stroke-linecap="round"/>
+  <rect x="1385" y="1325" width="310" height="132" rx="18" fill="#fff8eb" stroke="#d4a047" stroke-width="3"/>
+  <text x="1540" y="1372" text-anchor="middle" class="loop-title">closed-loop feedback</text>
+  <text x="1540" y="1408" text-anchor="middle" class="loop-text">diagnosis, hard negatives,</text>
+  <text x="1540" y="1440" text-anchor="middle" class="loop-text">or asset fixes return upstream</text>
+
+  <rect x="270" y="2620" width="1040" height="2" fill="#c8d6e2"/>
+  <text x="270" y="2660" class="loop-text">This SafeHat path instantiates the broader deployment loop with concrete scripts, asset names, and validation evidence.</text>
+</svg>

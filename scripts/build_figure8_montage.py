@@ -23,7 +23,7 @@ PANELS = [
     ("(b) Segmentation",   PREVIEW_DIR / "seg_80.jpg"),
     ("(c) Pose",           PREVIEW_DIR / "pose_140.jpg"),
     ("(d) Classification", PREVIEW_DIR / "cls_160.jpg"),
-    ("(e) OBB",            PREVIEW_DIR / "obb1_200.jpg"),
+    ("(e) OBB",            PREVIEW_DIR / "obb_road.png"),
 ]
 
 # After 90° CCW rotation: portrait 616×1280 → landscape 1280×616
@@ -152,7 +152,7 @@ PANELS = [
     ("(b) Segmentation",   PREVIEW_DIR / "seg_80.jpg"),
     ("(c) Pose",           PREVIEW_DIR / "pose_140.jpg"),
     ("(d) Classification", PREVIEW_DIR / "cls_160.jpg"),
-    ("(e) OBB",            PREVIEW_DIR / "obb1_200.jpg"),
+    ("(e) OBB",            PREVIEW_DIR / "obb_road.png"),
 ]
 
 # Layout constants
