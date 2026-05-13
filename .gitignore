@@ -1,75 +1,80 @@
-# ── Paper drafts (keep off public repo during review) ────────────────────────
-Paper.md
-PaperEnglish.md
-Alignment.md
-Bugfix.md
-PaperList.md
-paperfix.md
-论文框架.md
-论文框架_backup.md
-期刊论文.md
-back/
-electronics-15-02067.pdf
-Paper_backup_captions.md
+# Root-level writing drafts and review material.
+/*.md
+!/README.md
+/CoverLetter*
+/ResponseLetter*
+/rebuttal*
+/revision*
+/*.pdf
+/back/
+/PaperDrafts/
 
-# ── Vale linting config (local writing tool, not project code) ───────────────
-.vale/
-.vale.ini
-Alignment.md
-.markdownlint.jsonc
-cspell.json
+# Local writing and linting tools.
+/.vale/
+/.vale.ini
+/.markdownlint.jsonc
+/cspell.json
 
-# ── Local test notes (not project code) ──────────────────────────────────────
-test/
+# Local notes, test scratch files, and logs.
+/test/
+/*.log
+*.tmp
 
-# ── Android build outputs ─────────────────────────────────────────────────────
+# Android build outputs.
 /build/
-app/build/
-app/.cxx/
+/app/build/
+/app/.cxx/
 
-# ── Gradle ────────────────────────────────────────────────────────────────────
-.gradle/
-gradle/wrapper/gradle-wrapper.jar
+# Gradle local state.
+/.gradle/
+/gradle/wrapper/gradle-wrapper.jar
 
-# ── Android local config (machine-specific) ───────────────────────────────────
-# local.properties — 已允许上传，不再忽略
-
-# ── IDE ───────────────────────────────────────────────────────────────────────
-.idea/
+# IDE settings.
+/.idea/
+/.vscode/
 *.iml
 
-# ── Python virtualenv ─────────────────────────────────────────────────────────
-.venv/
+# Python local state.
+/.venv/
 __pycache__/
 *.pyc
 
-# ── modelback/ — local backup dir, redundant with assets; excluded entirely ───
-modelback/
+# Local model backups.
+/modelback/
 
-# ── Training datasets (large, reference Roboflow source instead) ──────────────
-data/train/
-data/valid/
-data/hardneg_pool/
+# Training datasets and experiment outputs.
+/data/train/
+/data/valid/
+/data/hardneg_pool/
+/data/testdata/
+/runs/
 
-# ── Training / experiment run outputs ─────────────────────────────────────────
-runs/
+# Paper-only scripts and generated paper figures.
+/scripts/build_paper_figure_assets.py
+/scripts/build_figure*.py
+/scripts/_*.py
+/scripts/download_testdata.py
+/scripts/sensitivity_sweep.py
+/testpics/Figure_*.svg
+/testpics/figure8*.png
+/testpics/obbtest.png
+/testpics/previews/obb_road.png
 
-# ── Backup files ──────────────────────────────────────────────────────────────
-*.bak
-
-# ── OS ────────────────────────────────────────────────────────────────────────
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# ── Logcat dumps (runtime, not source) ───────────────────────────────────────
-# logcat.txt — 已允许上传，不再忽略
-
-# ── Large video files (exceed GitHub 100 MB limit) ───────────────────────────
+# Private captured samples and large video files.
+/testpics/contact_*.jpg
+/testpics/obb_scan_*.jpg
 *.mp4
 *.avi
 *.mov
 
-# ── Root-level model weights (explicitly allowed) ────────────────────────────
+# Backup files.
+*.bak
+
+# OS metadata.
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Root-level model weights kept public for this project.
 !/yolo26n.pt
 !/best.pt
