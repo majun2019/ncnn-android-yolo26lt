@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import sys, io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 """
@@ -16,7 +14,6 @@ from pathlib import Path
 import numpy as np
 import cv2
 
-
 def resolve_detect_asset_paths(workspace_root: Path) -> tuple[str, str]:
     assets_dir = workspace_root / "app" / "src" / "main" / "assets"
     for stem in ("yolo26n_safehat.ncnn", "yolo26n_e2e.ncnn"):
@@ -27,7 +24,6 @@ def resolve_detect_asset_paths(workspace_root: Path) -> tuple[str, str]:
     return str((assets_dir / "yolo26n_safehat.ncnn.param").resolve()), str((assets_dir / "yolo26n_safehat.ncnn.bin").resolve())
 
 def test_ncnn_with_size(param_path, bin_path, img, label):
-    """用指定图像测试NCNN输出"""
     import ncnn
     
     net = ncnn.Net()
@@ -37,7 +33,6 @@ def test_ncnn_with_size(param_path, bin_path, img, label):
     h, w = img.shape[:2]
     target = 640
     
-    # 方法1: 直接resize到640x640 (无padding)
     img_sq = cv2.resize(img, (target, target))
     mat_sq = ncnn.Mat.from_pixels(img_sq, ncnn.Mat.PixelType.PIXEL_BGR2RGB, target, target)
     mat_sq.substract_mean_normalize([], [1/255.0]*3)
@@ -62,12 +57,10 @@ def test_ncnn_with_size(param_path, bin_path, img, label):
         print(f"    ✅ 所有类别 max < 0.01")
     del ex
 
-    # 方法2: letterbox (等比缩放 + padding to 32倍数)
     scale = min(target/w, target/h)
     new_w, new_h = int(w*scale), int(h*scale)
     img_resized = cv2.resize(img, (new_w, new_h))
     
-    # padding到32的倍数
     pad_w = (new_w + 31) // 32 * 32
     pad_h = (new_h + 31) // 32 * 32
     wpad = pad_w - new_w
@@ -88,8 +81,7 @@ def test_ncnn_with_size(param_path, bin_path, img, label):
     max_scores2 = cls2.max(axis=0)
     
     actual_input_w = mat_pad.w
-    actual_input_h = mat_pad.h  # ncnn Mat: w is innermost
-    # ncnn Mat from_pixels: w=width, h=height
+    actual_input_h = mat_pad.h
     print(f"\n  [{label}] letterbox (resize={new_w}x{new_h}, pad={wpad},{hpad}, final=??)")
     print(f"    ncnn Mat: w={mat_pad.w}, h={mat_pad.h}, c={mat_pad.c}")
     print(f"    cls range: [{cls2.min():.6f}, {cls2.max():.6f}]")
@@ -103,9 +95,7 @@ def test_ncnn_with_size(param_path, bin_path, img, label):
         print(f"    ✅ 所有类别 max < 0.01")
     del ex2
     
-    # 方法3: letterbox 到 640x640 (标准YOLO方式)
     img_640 = np.full((target, target, 3), 114, dtype=np.uint8)
-    # 居中放置
     top = (target - new_h) // 2
     left = (target - new_w) // 2
     img_640[top:top+new_h, left:left+new_w] = img_resized
@@ -134,12 +124,10 @@ def test_ncnn_with_size(param_path, bin_path, img, label):
     del ex3
     del net
 
-
 def main():
     workspace_root = Path(__file__).resolve().parents[1]
     PARAM, BIN = resolve_detect_asset_paths(workspace_root)
 
-    # 也可测试历史项目模型（可选）：设置 LEGACY_NCNN_MODEL_DIR 后启用
     legacy_dir = os.environ.get("LEGACY_NCNN_MODEL_DIR", "")
     PARAM2 = str(Path(legacy_dir) / "model.ncnn.param") if legacy_dir else ""
     BIN2   = str(Path(legacy_dir) / "model.ncnn.bin") if legacy_dir else ""
@@ -148,7 +136,6 @@ def main():
     print("关键假设验证: 非正方形输入 + letterbox 是否导致分数爆炸?")
     print("=" * 70)
     
-    # 不同尺寸的灰色测试图
     test_cases = [
         ("640x640 正方形", np.full((640, 640, 3), 128, dtype=np.uint8)),
         ("480x640 竖屏",   np.full((640, 480, 3), 128, dtype=np.uint8)),
@@ -170,7 +157,6 @@ def main():
             print(f"  输入图像: {label} ({img.shape[1]}x{img.shape[0]})")
             print(f"{'='*60}")
             test_ncnn_with_size(param, bin_f, img, label)
-
 
 if __name__ == "__main__":
     main()

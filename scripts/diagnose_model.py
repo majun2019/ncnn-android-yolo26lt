@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-诊断脚本：比较 PyTorch 模型 vs NCNN 模型的检测输出
-定位问题是出在训练/模型本身还是NCNN导出环节
-"""
 import sys
 from pathlib import Path
 from ultralytics import YOLO
@@ -16,7 +11,6 @@ CLASSES = [
     "Person", "Safety Cone", "Safety Vest", "Machinery", "Vehicle"
 ]
 
-
 def resolve_detect_asset_paths(root: Path) -> tuple[Path, Path]:
     assets_dir = root / "app" / "src" / "main" / "assets"
     for stem in ("yolo26n_safehat.ncnn", "yolo26n_e2e.ncnn"):
@@ -27,7 +21,6 @@ def resolve_detect_asset_paths(root: Path) -> tuple[Path, Path]:
     return assets_dir / "yolo26n_safehat.ncnn.param", assets_dir / "yolo26n_safehat.ncnn.bin"
 
 def test_pytorch_model(model_path: str, img_path: str):
-    """用 PyTorch 模型直接推理"""
     print("=" * 70)
     print(f"[PyTorch] 模型: {model_path}")
     print(f"[PyTorch] 图片: {img_path}")
@@ -35,7 +28,6 @@ def test_pytorch_model(model_path: str, img_path: str):
     
     model = YOLO(model_path)
     
-    # 推理
     results = model.predict(img_path, imgsz=640, conf=0.25, verbose=False)
     
     for r in results:
@@ -53,33 +45,27 @@ def test_pytorch_model(model_path: str, img_path: str):
     
     return results
 
-
 def test_pytorch_raw_output(model_path: str, img_path: str):
-    """直接查看 PyTorch 模型原始输出（O2M头）"""
     print("\n" + "=" * 70)
     print(f"[PyTorch RAW] 检查 O2M 头原始输出")
     print("=" * 70)
     
     model = YOLO(model_path)
     
-    # 加载图片
     img = cv2.imread(img_path)
     if img is None:
         print(f"  ✗ 无法读取图片: {img_path}")
         return
     
-    # 手动前处理
     from ultralytics.data.augment import LetterBox
     letterbox = LetterBox(new_shape=(640, 640), auto=False)
     img_lb = letterbox(image=img)
     img_tensor = torch.from_numpy(img_lb).permute(2, 0, 1).float().unsqueeze(0) / 255.0
     
-    # 获取模型内部输出
     torch_model = model.model
     torch_model.eval()
     
     with torch.no_grad():
-        # 正常推理（包含NMS）
         preds = torch_model(img_tensor)
     
     print(f"\n  模型输出类型: {type(preds)}")
@@ -96,9 +82,7 @@ def test_pytorch_raw_output(model_path: str, img_path: str):
     elif isinstance(preds, torch.Tensor):
         print(f"  preds shape: {preds.shape}, dtype: {preds.dtype}")
     
-    # 尝试获取 O2M (one2many) 头的原始输出
-    # YOLO26 检测头有 one2many 和 one2one 两种
-    head = torch_model.model[-1]  # 检测头通常是最后一层
+    head = torch_model.model[-1]
     print(f"\n  检测头类型: {type(head).__name__}")
     print(f"  检测头属性: {[a for a in dir(head) if not a.startswith('_')][:30]}")
     
@@ -109,9 +93,7 @@ def test_pytorch_raw_output(model_path: str, img_path: str):
     if hasattr(head, 'reg_max'):
         print(f"  reg_max: {head.reg_max}")
 
-
 def compare_ncnn_output(param_path: str, bin_path: str, img_path: str):
-    """如果 pyncnn 可用，直接加载NCNN模型推理"""
     try:
         import ncnn
     except ImportError:
@@ -132,16 +114,13 @@ def compare_ncnn_output(param_path: str, bin_path: str, img_path: str):
         print(f"  ✗ 无法读取图片")
         return
     
-    # letterbox 到 640x640
     h, w = img.shape[:2]
     scale = min(640/w, 640/h)
     new_w, new_h = int(w*scale), int(h*scale)
     img_resized = cv2.resize(img, (new_w, new_h))
     
-    # 创建 ncnn Mat
     mat_in = ncnn.Mat.from_pixels_resize(img_resized, ncnn.Mat.PixelType.PIXEL_BGR2RGB, new_w, new_h, new_w, new_h)
     
-    # padding
     wpad = (new_w + 31) // 32 * 32 - new_w
     hpad = (new_h + 31) // 32 * 32 - new_h
     mat_pad = ncnn.copy_make_border(mat_in, hpad // 2, hpad - hpad // 2, wpad // 2, wpad - wpad // 2, ncnn.BorderType.BORDER_CONSTANT, 114.0)
@@ -155,45 +134,38 @@ def compare_ncnn_output(param_path: str, bin_path: str, img_path: str):
     ret, out = ex.extract("out0")
     print(f"  输出 shape: w={out.w}, h={out.h}, c={out.c}")
     
-    # 解析输出
     if out.c == 1:
-        # 转为numpy
         arr = np.array(out)
         if arr.ndim == 3:
-            arr = arr[0]  # 去掉 c 维度
+            arr = arr[0]
         print(f"  numpy shape: {arr.shape}")
         
         if out.w > out.h:
-            # transposed: h=14, w=8400
             num_boxes = out.w
             num_class = out.h - 4
             print(f"  格式: transposed, boxes={num_boxes}, classes={num_class}")
             
-            # 检查bbox值范围
-            bbox_row0 = arr[0, :]  # x_center
-            bbox_row1 = arr[1, :]  # y_center
-            bbox_row2 = arr[2, :]  # width
-            bbox_row3 = arr[3, :]  # height
+            bbox_row0 = arr[0, :]
+            bbox_row1 = arr[1, :]
+            bbox_row2 = arr[2, :]
+            bbox_row3 = arr[3, :]
             
             print(f"\n  bbox x_center: min={bbox_row0.min():.2f} max={bbox_row0.max():.2f} mean={bbox_row0.mean():.2f}")
             print(f"  bbox y_center: min={bbox_row1.min():.2f} max={bbox_row1.max():.2f} mean={bbox_row1.mean():.2f}")
             print(f"  bbox width:    min={bbox_row2.min():.2f} max={bbox_row2.max():.2f} mean={bbox_row2.mean():.2f}")
             print(f"  bbox height:   min={bbox_row3.min():.2f} max={bbox_row3.max():.2f} mean={bbox_row3.mean():.2f}")
             
-            # 检查类别分数分布
-            cls_scores = arr[4:, :]  # (10, 8400)
+            cls_scores = arr[4:, :]
             print(f"\n  类别分数矩阵 shape: {cls_scores.shape}")
             print(f"  类别分数范围: min={cls_scores.min():.6f} max={cls_scores.max():.6f}")
             
-            # 每个类别的最大分数
             for k in range(num_class):
                 row = cls_scores[k, :]
                 top5_idx = np.argsort(row)[-5:][::-1]
                 print(f"  class[{k}] {CLASSES[k]:15s}: max={row.max():.6f} "
                       f"mean={row.mean():.6f} >0.5 count={np.sum(row > 0.5)}")
             
-            # 找分数最高的框
-            max_per_box = cls_scores.max(axis=0)  # 每个box的最大类别分数
+            max_per_box = cls_scores.max(axis=0)
             top_k = 10
             top_idx = np.argsort(max_per_box)[-top_k:][::-1]
             print(f"\n  Top-{top_k} 检测结果:")
@@ -204,16 +176,13 @@ def compare_ncnn_output(param_path: str, bin_path: str, img_path: str):
                 print(f"    [{rank}] box={idx} {CLASSES[cls_id]:15s} score={score:.6f} "
                       f"xywh=({xc:.1f},{yc:.1f},{bw:.1f},{bh:.1f})")
 
-
 def check_export_output_format(model_path: str):
-    """检查 ONNX/NCNN 导出时输出格式"""
     print("\n" + "=" * 70)
     print("[导出检查] 检查模型导出参数")
     print("=" * 70)
     
     model = YOLO(model_path)
     
-    # 检查模型类型
     print(f"  模型类型: {model.task}")
     print(f"  模型名称: {model.model_name if hasattr(model, 'model_name') else 'N/A'}")
     
@@ -229,27 +198,22 @@ def check_export_output_format(model_path: str):
     if hasattr(head, 'dynamic'):
         print(f"  dynamic: {head.dynamic}")
     
-    # 检查模型 forward 方法
     import inspect
     fwd_src = inspect.getsource(head.forward)
-    # 搜索关键分支
     has_e2e = 'end2end' in fwd_src or 'one2one' in fwd_src
     has_o2m = 'one2many' in fwd_src
     print(f"\n  forward 包含 end2end/one2one 分支: {has_e2e}")
     print(f"  forward 包含 one2many 分支: {has_o2m}")
     
-    # 打印forward源码的关键部分
     lines = fwd_src.split('\n')
     for i, line in enumerate(lines):
         if any(kw in line for kw in ['end2end', 'one2one', 'one2many', 'export', 'self.training', 'return']):
             print(f"    L{i}: {line.rstrip()}")
 
-
 def main():
     best_pt = ROOT / "runs" / "detect" / "runs" / "calib" / "safehat_confcal_v3" / "weights" / "best.pt"
     ncnn_param, ncnn_bin = resolve_detect_asset_paths(ROOT)
     
-    # 使用验证集中有人物的图片
     val_dir = ROOT / "data" / "valid" / "images"
     test_images = sorted(val_dir.glob("*.jpg"))[:1]
     
@@ -260,18 +224,13 @@ def main():
     img_path = str(test_images[0])
     print(f"测试图片: {img_path}")
     
-    # 1. 检查导出参数
     check_export_output_format(str(best_pt))
     
-    # 2. PyTorch 模型正常推理
     test_pytorch_model(str(best_pt), img_path)
     
-    # 3. PyTorch 模型原始输出
     test_pytorch_raw_output(str(best_pt), img_path)
     
-    # 4. NCNN 模型推理
     compare_ncnn_output(str(ncnn_param), str(ncnn_bin), img_path)
-
 
 if __name__ == "__main__":
     main()

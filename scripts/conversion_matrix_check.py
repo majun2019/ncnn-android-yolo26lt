@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
@@ -13,7 +12,6 @@ from typing import List
 import cv2
 from ultralytics import YOLO
 
-
 @dataclass
 class EvalStats:
     name: str
@@ -27,17 +25,14 @@ class EvalStats:
     det_avg: float
     conf_avg: float
 
-
 def run(cmd: list[str], cwd: Path | None = None) -> None:
     subprocess.run(cmd, check=True, cwd=str(cwd) if cwd else None)
-
 
 def pick_images(images_dir: Path, limit: int) -> List[Path]:
     exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
     imgs = [p for p in images_dir.rglob("*") if p.suffix.lower() in exts]
     imgs.sort()
     return imgs[:limit]
-
 
 def eval_model(name: str, model_path: Path, images: List[Path], conf: float, imgsz: int) -> EvalStats:
     try:
@@ -77,13 +72,11 @@ def eval_model(name: str, model_path: Path, images: List[Path], conf: float, img
             conf_avg=0,
         )
 
-
 def copy_ncnn_outputs(src_param: Path, src_bin: Path, dst_dir: Path) -> Path:
     dst_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src_param, dst_dir / "model.ncnn.param")
     shutil.copy2(src_bin, dst_dir / "model.ncnn.bin")
     return dst_dir
-
 
 def export_ultralytics_ncnn(pt: Path, out_dir: Path, imgsz: int, half: bool, end2end: bool) -> Path:
     model = YOLO(str(pt))
@@ -97,7 +90,6 @@ def export_ultralytics_ncnn(pt: Path, out_dir: Path, imgsz: int, half: bool, end
     shutil.copy2(src / "model.ncnn.param", out_dir / "model.ncnn.param")
     shutil.copy2(src / "model.ncnn.bin", out_dir / "model.ncnn.bin")
     return out_dir
-
 
 def export_pnnx_torchscript(pt: Path, out_dir: Path, imgsz: int, fp16: bool, pnnx_exe: Path) -> Path:
     model = YOLO(str(pt))
@@ -113,7 +105,6 @@ def export_pnnx_torchscript(pt: Path, out_dir: Path, imgsz: int, fp16: bool, pnn
         f"fp16={1 if fp16 else 0}",
     ])
     return out_dir
-
 
 def export_onnx2ncnn(pt: Path, out_dir: Path, imgsz: int, onnx2ncnn_exe: Path, ncnnoptimize_exe: Path | None, fp16_opt: bool) -> Path:
     model = YOLO(str(pt))
@@ -140,7 +131,6 @@ def export_onnx2ncnn(pt: Path, out_dir: Path, imgsz: int, onnx2ncnn_exe: Path, n
 
     return out_dir
 
-
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--pt", required=True)
@@ -164,24 +154,20 @@ def main() -> None:
 
     results: list[EvalStats] = []
 
-    # Baseline PT
     results.append(eval_model("PT-baseline", pt, images, args.conf, args.imgsz))
 
-    # A) Ultralytics NCNN fp32 o2m
     try:
         mdir = export_ultralytics_ncnn(pt, workdir / "ultra_ncnn_fp32_o2m", args.imgsz, half=False, end2end=False)
         results.append(eval_model("NCNN-ultra-fp32-o2m", mdir, images, args.conf, args.imgsz))
     except Exception as e:
         results.append(EvalStats("NCNN-ultra-fp32-o2m", str(workdir / "ultra_ncnn_fp32_o2m"), False, str(e), len(images), 0, 0, 0, 0, 0))
 
-    # B) Ultralytics NCNN fp16 o2m
     try:
         mdir = export_ultralytics_ncnn(pt, workdir / "ultra_ncnn_fp16_o2m", args.imgsz, half=True, end2end=False)
         results.append(eval_model("NCNN-ultra-fp16-o2m", mdir, images, args.conf, args.imgsz))
     except Exception as e:
         results.append(EvalStats("NCNN-ultra-fp16-o2m", str(workdir / "ultra_ncnn_fp16_o2m"), False, str(e), len(images), 0, 0, 0, 0, 0))
 
-    # C) pnnx from torchscript (legacy path)
     if args.pnnx_exe:
         try:
             mdir = export_pnnx_torchscript(pt, workdir / "pnnx_ts_fp16", args.imgsz, fp16=True, pnnx_exe=Path(args.pnnx_exe))
@@ -189,7 +175,6 @@ def main() -> None:
         except Exception as e:
             results.append(EvalStats("NCNN-pnnx-ts-fp16", str(workdir / "pnnx_ts_fp16"), False, str(e), len(images), 0, 0, 0, 0, 0))
 
-    # D) onnx2ncnn path
     if args.onnx2ncnn_exe:
         try:
             mdir = export_onnx2ncnn(
@@ -211,7 +196,6 @@ def main() -> None:
     out_json = workdir / "conversion_matrix_results.json"
     out_json.write_text(json.dumps([asdict(r) for r in results], ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Saved: {out_json}")
-
 
 if __name__ == "__main__":
     main()

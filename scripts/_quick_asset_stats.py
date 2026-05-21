@@ -28,7 +28,6 @@ for p in imgs:
     _, out = ex.extract("out0")
     out_np = np.array(out)
     if out_np.ndim == 3: out_np = out_np[0]
-    # Expect (14,8400)
     if out_np.shape[0] < out_np.shape[1]:
         cls = out_np[4:,:]
         mx = cls.max(axis=0)

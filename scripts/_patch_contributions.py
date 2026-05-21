@@ -1,4 +1,3 @@
-"""Patch Paper.md §1 contributions: rewrite C1/C2/C3 and remove defensive tail sentence."""
 import pathlib, sys
 
 p = pathlib.Path("Paper.md")

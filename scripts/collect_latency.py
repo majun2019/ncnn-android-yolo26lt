@@ -1,26 +1,3 @@
-#!/usr/bin/env python3
-"""
-collect_latency.py — 从 logcat 解析 YOLO26BENCH 计时日志，
-自动生成论文表 7（实验环境）、表 8（SafeHat 验证）、表 10（推理延迟）所需数据。
-
-使用方式
---------
-1. 实时采集（需要 adb 连接设备，运行 30 s 后 Ctrl+C）：
-   python scripts/collect_latency.py --live --seconds 30
-
-2. 离线解析已保存的 logcat 文件：
-   adb logcat -s YOLO26BENCH > logs/bench.txt     # 手动在设备上切换五个任务各运行 30 s
-   python scripts/collect_latency.py --file logs/bench.txt
-
-3. 同时输出设备环境信息（需要 adb 连接）：
-   python scripts/collect_latency.py --file logs/bench.txt --device-info
-
-输出
-----
-- 终端打印论文格式的三张表
-- 若指定 --out-md <path>，将 Markdown 表格写入该文件
-"""
-
 import os
 import re
 import sys
@@ -31,9 +8,6 @@ import statistics
 from collections import defaultdict
 from pathlib import Path
 
-# ──────────────────────────────────────────────────────────────
-# 常量
-# ──────────────────────────────────────────────────────────────
 TASK_NAMES = {0: "检测 (det)", 1: "分割 (seg)", 2: "姿态 (pose)", 3: "分类 (cls)", 4: "OBB (obb)"}
 MODEL_NAMES = {
     0: "yolo26n_safehat",
@@ -43,9 +17,6 @@ MODEL_NAMES = {
     4: "yolo26n_obb_e2e",
 }
 
-# ──────────────────────────────────────────────────────────────
-# 解析
-# ──────────────────────────────────────────────────────────────
 RE_FRAME = re.compile(
     r"YOLO26BENCH[^\n]*FRAME\s+task=(\d+)\s+name=\S+\s+detect_ms=([\d.]+)"
 )
@@ -55,9 +26,7 @@ RE_SUMMARY = re.compile(
 )
 RE_LOAD = re.compile(r"YOLO26BENCH[^\n]*LOAD\s+task=(\d+)\s+name=(\S+)\s+model=(\S+)")
 
-
 def parse_log(lines):
-    """返回 {taskid: [detect_ms, ...]} 字典，以及 load 事件列表。"""
     samples = defaultdict(list)
     loads = []
 
@@ -75,9 +44,7 @@ def parse_log(lines):
 
     return samples, loads
 
-
 def compute_stats(ms_list):
-    """返回 mean, p5, p95, fps_mean 等统计量（跳过前 10 帧预热）。"""
     data = ms_list[10:] if len(ms_list) > 10 else ms_list
     if not data:
         return None
@@ -97,12 +64,7 @@ def compute_stats(ms_list):
         "fps":    fps,
     }
 
-
-# ──────────────────────────────────────────────────────────────
-# 设备信息采集（adb）
-# ──────────────────────────────────────────────────────────────
 def find_adb_executable():
-    """尽量自动定位 adb，避免要求用户手动把 platform-tools 加入 PATH。"""
     adb_in_path = shutil.which("adb")
     if adb_in_path:
         return adb_in_path
@@ -130,13 +92,10 @@ def find_adb_executable():
 
     return "adb"
 
-
 ADB_EXECUTABLE = find_adb_executable()
-
 
 def adb_run(args, timeout=5):
     return subprocess.run([ADB_EXECUTABLE] + args, capture_output=True, text=True, timeout=timeout)
-
 
 def adb_getprop(prop):
     try:
@@ -145,14 +104,12 @@ def adb_getprop(prop):
     except Exception:
         return "N/A"
 
-
 def adb_shell(cmd):
     try:
         r = adb_run(["shell", cmd], timeout=5)
         return r.stdout.strip()
     except Exception:
         return "N/A"
-
 
 def collect_device_info():
     marketing   = adb_getprop("ro.config.marketing_name")
@@ -193,10 +150,6 @@ def collect_device_info():
         "abi":          abi,
     }
 
-
-# ──────────────────────────────────────────────────────────────
-# 输出格式化
-# ──────────────────────────────────────────────────────────────
 def fmt_table7(device_info, ncnn_ver="20260113", opencv_ver="4.13.0",
                ndk_ver="27", agp_ver="8.7.3"):
     rows = [
@@ -222,9 +175,7 @@ def fmt_table7(device_info, ncnn_ver="20260113", opencv_ver="4.13.0",
         lines.append(f"| {k} | {v} |")
     return "\n".join(lines)
 
-
 def fmt_table8(loads):
-    """SafeHat 部署验证表，根据 LOAD 事件判断哪些模型已成功加载。"""
     loaded_tasks = {l["task"] for l in loads}
     rows = [
         ("det", 0,  "SafeHat 检测模型加载",            "yolo26n_safehat.ncnn.{param,bin}；兼容旧别名 yolo26n_e2e.ncnn.{param,bin}"),
@@ -245,7 +196,6 @@ def fmt_table8(loads):
         status = "✓" if tid in loaded_tasks else "（待运行）"
         lines.append(f"| {item} | {criterion} | {status} |")
     return "\n".join(lines)
-
 
 def fmt_table10(all_stats):
     lines = []
@@ -268,10 +218,6 @@ def fmt_table10(all_stats):
             )
     return "\n".join(lines)
 
-
-# ──────────────────────────────────────────────────────────────
-# 实时 logcat 采集
-# ──────────────────────────────────────────────────────────────
 def live_collect(seconds):
     import threading, time
     lines = []
@@ -303,10 +249,6 @@ def live_collect(seconds):
     print(f"\n采集完毕，共 {len(lines)} 行。")
     return lines
 
-
-# ──────────────────────────────────────────────────────────────
-# 主入口
-# ──────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="解析 YOLO26BENCH logcat，生成论文表格")
     group = parser.add_mutually_exclusive_group(required=True)
@@ -319,7 +261,6 @@ def main():
     parser.add_argument("--agp",        default="8.7.3",help="AGP 版本号（默认 8.7.3）")
     args = parser.parse_args()
 
-    # 1. 读取日志行
     if args.live:
         lines = live_collect(args.seconds)
     else:
@@ -330,17 +271,14 @@ def main():
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         print(f"读取 {len(lines)} 行：{path}")
 
-    # 2. 解析
     samples, loads = parse_log(lines)
     all_stats = {tid: compute_stats(ms_list) for tid, ms_list in samples.items()}
 
-    # 3. 设备信息
     device_info = {}
     if args.device_info or args.live:
         print("采集设备信息……")
         device_info = collect_device_info()
 
-    # 4. 格式化输出
     out_parts = []
     out_parts.append(fmt_table7(device_info, ndk_ver=args.ndk, agp_ver=args.agp))
     out_parts.append(fmt_table8(loads))
@@ -349,14 +287,12 @@ def main():
     output = "\n".join(out_parts)
     print(output)
 
-    # 5. 写文件
     if args.out_md:
         out_path = Path(args.out_md)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(output, encoding="utf-8")
         print(f"\n已写入: {out_path}")
 
-    # 6. 按任务输出原始统计摘要（便于核查）
     print("\n──── 原始统计摘要 ────")
     for tid in range(5):
         name  = TASK_NAMES.get(tid, f"task{tid}")
@@ -367,7 +303,6 @@ def main():
                   f"p5={st['p5_ms']:5.1f}  p95={st['p95_ms']:5.1f}  fps={st['fps']:5.1f}")
         else:
             print(f"  {name:20s} 无数据（请在设备上切换至该任务运行 ≥30 帧）")
-
 
 if __name__ == "__main__":
     main()

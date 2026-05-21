@@ -1,16 +1,3 @@
-"""
-build_figure8_combined.py
-
-Assemble Figure 8 as a 3-row × 1-col composite with uniform row height.
-
-  Row 1 – (a): training curves      ← figure8a_train_results_styled.png
-  Row 2 – (b): val_batch 2×4 grid   ← val_batch0_pred.jpg  (8 of 9 cells)
-  Row 3 – (c): 5-task montage       ← figure8c_five_task_montage.png
-
-Output:
-  runs/paper_figures/figure8_combined.png
-  testpics/Figure_8.png
-"""
 from PIL import Image, ImageDraw, ImageFont
 import pathlib, shutil
 
@@ -18,21 +5,18 @@ ROOT    = pathlib.Path(__file__).parent.parent
 FIG_DIR = ROOT / 'runs' / 'paper_figures'
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-# ── Source files ───────────────────────────────────────────────────────────────
 SRC_A   = FIG_DIR / 'figure8a_train_results_styled.png'
 SRC_VAL = (ROOT / 'runs' / 'detect' / 'runs' / 'train' /
            'yolo26n_safehat' / 'val_batch0_pred.jpg')
 SRC_C   = FIG_DIR / 'figure8c_five_task_montage.png'
 
-# ── Layout parameters ──────────────────────────────────────────────────────────
-GRID_CROP_TOP = 50      # strip Ultralytics filename watermark (px)
-ROW_HEIGHT    = 440     # uniform height for every row (px)
-ROW_GAP       = 18      # vertical gap between rows (px)
+GRID_CROP_TOP = 50
+ROW_HEIGHT    = 440
+ROW_GAP       = 18
 FONT_SIZE     = 22
 BG            = (255, 255, 255)
 FG            = (30,  30,  30)
 
-# ── Font (Windows / Linux fallback) ───────────────────────────────────────────
 _font_paths = [
     r'C:\Windows\Fonts\arialbd.ttf',
     r'C:\Windows\Fonts\arial.ttf',
@@ -49,20 +33,16 @@ for _fp in _font_paths:
 if font is None:
     font = ImageFont.load_default()
 
-
 def scale_to_height(img: Image.Image, h: int) -> Image.Image:
     w = round(img.width * h / img.height)
     return img.resize((w, h), Image.LANCZOS)
 
-
-# ── Row 1: training curves ─────────────────────────────────────────────────────
 img_a = Image.open(SRC_A).convert('RGB')
 row1  = scale_to_height(img_a, ROW_HEIGHT)
 print(f'row1 (8a):  src={img_a.size}  →  {row1.size}')
 
-# ── Row 2: val_batch rearranged as 2 rows × 4 cols ────────────────────────────
 val    = Image.open(SRC_VAL).convert('RGB')
-cw, ch = val.width // 3, val.height // 3   # cell dims in source mosaic
+cw, ch = val.width // 3, val.height // 3
 
 cells = []
 for r in range(3):
@@ -79,7 +59,7 @@ for r in range(3):
     if len(cells) == 8:
         break
 
-cell_w, cell_h = cells[0].size          # 640 × (ch − GRID_CROP_TOP)
+cell_w, cell_h = cells[0].size
 grid = Image.new('RGB', (4 * cell_w, 2 * cell_h), BG)
 for i, cell in enumerate(cells):
     grid.paste(cell, ((i % 4) * cell_w, (i // 4) * cell_h))
@@ -87,17 +67,14 @@ for i, cell in enumerate(cells):
 row2 = scale_to_height(grid, ROW_HEIGHT)
 print(f'row2 (8b):  grid={grid.size}  →  {row2.size}')
 
-# ── Row 3: 5-task landscape montage ───────────────────────────────────────────
 img_c = Image.open(SRC_C).convert('RGB')
 row3  = scale_to_height(img_c, ROW_HEIGHT)
 print(f'row3 (8c):  src={img_c.size}  →  {row3.size}')
 
-# ── Measure label strip height ─────────────────────────────────────────────────
 _tmp  = ImageDraw.Draw(Image.new('RGB', (1, 1)))
 _bb   = _tmp.textbbox((0, 0), '(a)', font=font)
-LABEL_H = (_bb[3] - _bb[1]) + 8        # text height + 8 px padding
+LABEL_H = (_bb[3] - _bb[1]) + 8
 
-# ── Build canvas ───────────────────────────────────────────────────────────────
 canvas_w = max(row1.width, row2.width, row3.width)
 slot_h   = ROW_HEIGHT + LABEL_H
 canvas_h = 3 * slot_h + 2 * ROW_GAP
@@ -105,12 +82,10 @@ canvas_h = 3 * slot_h + 2 * ROW_GAP
 canvas = Image.new('RGB', (canvas_w, canvas_h), BG)
 draw   = ImageDraw.Draw(canvas)
 
-
 def place(img: Image.Image, label: str, row_idx: int) -> None:
     y0 = row_idx * (slot_h + ROW_GAP)
     x0 = (canvas_w - img.width) // 2
     canvas.paste(img, (x0, y0))
-    # centred label below the image
     bb = draw.textbbox((0, 0), label, font=font)
     lw = bb[2] - bb[0]
     draw.text(
@@ -118,12 +93,10 @@ def place(img: Image.Image, label: str, row_idx: int) -> None:
         label, fill=FG, font=font,
     )
 
-
 place(row1, '(a)', 0)
 place(row2, '(b)', 1)
 place(row3, '(c)', 2)
 
-# ── Save ───────────────────────────────────────────────────────────────────────
 out = FIG_DIR / 'figure8_combined.png'
 canvas.save(out, dpi=(300, 300))
 print(f'\nSaved  {out.resolve()}')

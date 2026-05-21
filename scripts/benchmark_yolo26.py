@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-"""
-YOLO26 性能基准测试
-
-测试不同模式下的推理性能对比。
-
-使用方法：
-    python benchmark_yolo26.py
-    python benchmark_yolo26.py --size 640 --runs 100
-"""
-
 import os
 import sys
 import time
@@ -16,7 +5,6 @@ import argparse
 from pathlib import Path
 
 def check_dependencies():
-    """检查依赖"""
     try:
         from ultralytics import YOLO
         import numpy as np
@@ -27,7 +15,6 @@ def check_dependencies():
         return False
 
 def benchmark_pytorch(model_path: str, img_size: int, num_runs: int):
-    """PyTorch推理基准测试"""
     from ultralytics import YOLO
     import numpy as np
     
@@ -41,12 +28,10 @@ def benchmark_pytorch(model_path: str, img_size: int, num_runs: int):
     model = YOLO(model_path)
     test_image = np.random.randint(0, 255, (img_size, img_size, 3), dtype=np.uint8)
     
-    # 预热
     print("\n预热中 (10次)...")
     for _ in range(10):
         model.predict(test_image, verbose=False)
     
-    # 正式测试
     print(f"测试中 ({num_runs}次)...")
     times = []
     for i in range(num_runs):
@@ -58,7 +43,7 @@ def benchmark_pytorch(model_path: str, img_size: int, num_runs: int):
         if (i + 1) % 20 == 0:
             print(f"  进度: {i+1}/{num_runs}")
     
-    times = np.array(times) * 1000  # 转换为毫秒
+    times = np.array(times) * 1000
     
     print(f"\n结果:")
     print(f"  平均: {np.mean(times):.2f} ms")
@@ -76,7 +61,6 @@ def benchmark_pytorch(model_path: str, img_size: int, num_runs: int):
     }
 
 def benchmark_sizes(model_path: str, sizes: list, num_runs: int):
-    """不同尺寸基准测试"""
     from ultralytics import YOLO
     import numpy as np
     
@@ -91,11 +75,9 @@ def benchmark_sizes(model_path: str, sizes: list, num_runs: int):
         print(f"\n测试尺寸: {size}x{size}")
         test_image = np.random.randint(0, 255, (size, size, 3), dtype=np.uint8)
         
-        # 预热
         for _ in range(5):
             model.predict(test_image, verbose=False)
         
-        # 测试
         times = []
         for _ in range(num_runs):
             start = time.perf_counter()
@@ -111,7 +93,6 @@ def benchmark_sizes(model_path: str, sizes: list, num_runs: int):
     return results
 
 def generate_report(results: dict, model_name: str):
-    """生成测试报告"""
     print(f"\n{'='*60}")
     print(f"性能测试报告")
     print(f"{'='*60}")
@@ -166,7 +147,6 @@ def main():
         print("  from ultralytics import YOLO")
         print("  model = YOLO('yolo26n.pt')")
         
-        # 仍然显示预估性能
         generate_report({}, args.model)
         return
     

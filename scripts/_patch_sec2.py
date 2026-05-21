@@ -1,10 +1,8 @@
-"""Patch Paper.md §2 — replace two defensive/self-justifying passages with positive research-gap statements."""
 import pathlib, re, sys
 
 p = pathlib.Path("Paper.md")
 text = p.read_text(encoding="utf-8")
 
-# ── Replacement 1: model-side paragraph tail (line 44) ────────────────────────
 old1 = (
     "这些工作大多验证了单任务检测在智能手机上的可运行性。"
     "对资源受限 Android 设备而言，进一步的问题在于不同任务输出能否在统一代码路径下被稳定解析。"
@@ -19,7 +17,6 @@ new1 = (
     "如何在共享基础链路上被统一调度并稳定解析，这一问题在现有工作中尚缺乏系统讨论。"
 )
 
-# ── Replacement 2: system-side paragraph (lines 46–48) ───────────────────────
 old2 = (
     "相比之下，TensorFlow Lite、MNN 和 ONNX Runtime Mobile 同样是重要参照框架，"
     "但现有文献与技术资料更多关注框架接口、硬件适配或单步模型转换，"

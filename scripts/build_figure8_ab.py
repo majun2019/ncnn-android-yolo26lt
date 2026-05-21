@@ -1,18 +1,3 @@
-"""
-build_figure8_ab.py
-
-Assemble Figure 8 as a 2-row × 1-col composite with uniform row height.
-
-  Row 1 – (a): training curves     ← figure8a_train_results_styled.png
-  Row 2 – (b): val_batch 2×4 grid  ← val_batch0_pred.jpg  (8 of 9 cells)
-
-Output:
-  runs/paper_figures/figure8_ab.png
-  testpics/Figure_8.png
-
-Figure 9 (five-task montage) stays as figure8c_five_task_montage.png.
-Copy to testpics/Figure_9.png is also done here for convenience.
-"""
 from PIL import Image, ImageDraw, ImageFont
 import pathlib, shutil
 
@@ -23,17 +8,15 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 SRC_A   = FIG_DIR / 'figure8a_train_results_styled.png'
 SRC_VAL = (ROOT / 'runs' / 'detect' / 'runs' / 'train' /
            'yolo26n_safehat' / 'val_batch0_pred.jpg')
-SRC_C   = FIG_DIR / 'figure8c_five_task_montage.png'   # → Figure 9
+SRC_C   = FIG_DIR / 'figure8c_five_task_montage.png'
 
-# ── Layout parameters ──────────────────────────────────────────────────────────
-GRID_CROP_TOP = 50      # strip Ultralytics filename watermark (px)
-ROW_HEIGHT    = 440     # uniform height for both rows (px)
-ROW_GAP       = 18      # vertical gap between rows (px)
+GRID_CROP_TOP = 50
+ROW_HEIGHT    = 440
+ROW_GAP       = 18
 FONT_SIZE     = 22
 BG            = (255, 255, 255)
 FG            = (30,  30,  30)
 
-# ── Font ───────────────────────────────────────────────────────────────────────
 _font_paths = [
     r'C:\Windows\Fonts\arialbd.ttf',
     r'C:\Windows\Fonts\arial.ttf',
@@ -50,18 +33,14 @@ for _fp in _font_paths:
 if font is None:
     font = ImageFont.load_default()
 
-
 def scale_to_height(img: Image.Image, h: int) -> Image.Image:
     w = round(img.width * h / img.height)
     return img.resize((w, h), Image.LANCZOS)
 
-
-# ── Row 1: training curves ─────────────────────────────────────────────────────
 img_a = Image.open(SRC_A).convert('RGB')
 row1  = scale_to_height(img_a, ROW_HEIGHT)
 print(f'row1 (8a):  src={img_a.size}  →  {row1.size}')
 
-# ── Row 2: val_batch rearranged as 2 rows × 4 cols ────────────────────────────
 val    = Image.open(SRC_VAL).convert('RGB')
 cw, ch = val.width // 3, val.height // 3
 
@@ -88,19 +67,16 @@ for i, cell in enumerate(cells):
 row2 = scale_to_height(grid, ROW_HEIGHT)
 print(f'row2 (8b):  grid={grid.size}  →  {row2.size}')
 
-# ── Label strip height ─────────────────────────────────────────────────────────
 _tmp  = ImageDraw.Draw(Image.new('RGB', (1, 1)))
 _bb   = _tmp.textbbox((0, 0), '(a)', font=font)
 LABEL_H = (_bb[3] - _bb[1]) + 8
 
-# ── Build canvas ───────────────────────────────────────────────────────────────
 canvas_w = max(row1.width, row2.width)
 slot_h   = ROW_HEIGHT + LABEL_H
 canvas_h = 2 * slot_h + ROW_GAP
 
 canvas = Image.new('RGB', (canvas_w, canvas_h), BG)
 draw   = ImageDraw.Draw(canvas)
-
 
 def place(img: Image.Image, label: str, row_idx: int) -> None:
     y0 = row_idx * (slot_h + ROW_GAP)
@@ -113,11 +89,9 @@ def place(img: Image.Image, label: str, row_idx: int) -> None:
         label, fill=FG, font=font,
     )
 
-
 place(row1, '(a)', 0)
 place(row2, '(b)', 1)
 
-# ── Save Figure 8 ──────────────────────────────────────────────────────────────
 out8 = FIG_DIR / 'figure8_ab.png'
 canvas.save(out8, dpi=(300, 300))
 print(f'\nSaved  {out8.resolve()}')
@@ -128,7 +102,6 @@ tc8.parent.mkdir(exist_ok=True)
 shutil.copy(out8, tc8)
 print(f'Copied {tc8}')
 
-# ── Copy Figure 9 (five-task montage) ─────────────────────────────────────────
 tc9 = ROOT / 'testpics' / 'Figure_9.png'
 shutil.copy(SRC_C, tc9)
 print(f'Copied Figure 9 → {tc9}')

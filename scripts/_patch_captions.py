@@ -1,11 +1,3 @@
-"""
-Patch Paper.md:
-  F6/T7  — convert all Chinese figure/table captions to MDPI English format
-  refs   — update in-text 图N → Figure N and 表N → Table N
-  T4     — compress Table 1 last column
-  T5     — split Table 4 into 4a / 4b
-  T6     — merge Table 6 last 2 columns
-"""
 import re, shutil, pathlib
 
 ROOT = pathlib.Path(__file__).parent.parent
@@ -14,9 +6,6 @@ shutil.copy(src, ROOT / 'Paper_backup_captions.md')
 
 text = src.read_text(encoding='utf-8')
 
-# ──────────────────────────────────────────────────────────
-# 1. Figure captions  (F6)
-# ──────────────────────────────────────────────────────────
 fig_caps = [
     ('**图 1：模型导出与设备端验证闭环**',
      '**Figure 1.** Model Export and On-Device Validation Closed Loop'),
@@ -39,9 +28,6 @@ for old, new in fig_caps:
     assert old in text, f'NOT FOUND: {old!r}'
     text = text.replace(old, new)
 
-# ──────────────────────────────────────────────────────────
-# 2. Table captions  (T7)  — Tables 4/6 handled in T5/T6 below
-# ──────────────────────────────────────────────────────────
 tbl_caps = [
     ('**表 1：五类任务的统一调度与差异化解析**',
      '**Table 1.** Unified Scheduling and Task-Specific Parsing for Five Task Types'),
@@ -64,9 +50,6 @@ for old, new in tbl_caps:
     assert old in text, f'NOT FOUND: {old!r}'
     text = text.replace(old, new)
 
-# ──────────────────────────────────────────────────────────
-# 3. Image alt-text  (F6)
-# ──────────────────────────────────────────────────────────
 alt_replacements = [
     ('![图 8(a) SafeHat 微调过程中的损失与检测指标曲线]',
      '![Figure 8(a) SafeHat fine-tuning loss and detection metric curves]'),
@@ -79,9 +62,6 @@ for old, new in alt_replacements:
     assert old in text, f'NOT FOUND: {old!r}'
     text = text.replace(old, new)
 
-# ──────────────────────────────────────────────────────────
-# 4. T4 — Compress Table 1 last column  (rows start with |, safe here)
-# ──────────────────────────────────────────────────────────
 old_t1_rows = (
     '| 0 | 检测 | yolo26n_safehat（兼容别名 yolo26n_e2e） | loadModel(taskid=0)；640×640 letterbox | SafeHat 主案例为 out0≈8400×14（O2M）；原始通用检测模型可为 out0≈300×6（E2E） | SafeHat 主案例采用 O2M 解码、概率校准、per-class Top-K / NMS 与语义约束；通用 E2E 模型则直接解析框、类别与置信度 |\n'
     '| 1 | 分割 | yolo26n_seg_e2e | loadModel(taskid=1)；640×640 letterbox | out0=300×38；out1=mask prototypes | 解析 bbox、类别与 32 维 mask coeffs；重建掩码并叠加轮廓 |\n'
@@ -99,9 +79,6 @@ new_t1_rows = (
 assert old_t1_rows in text, 'T4: Table 1 rows not found'
 text = text.replace(old_t1_rows, new_t1_rows)
 
-# ──────────────────────────────────────────────────────────
-# 6. T5 — Split Table 4 into 4a / 4b
-# ──────────────────────────────────────────────────────────
 old_t4 = (
     '**表 4：五阶段诊断流程——各阶段定义**\n\n'
     '| 阶段 | 名称 | 触发条件 | 抽象操作（方法层） | 本研究实例化（项目层） | 退出判据 |\n'
@@ -134,9 +111,6 @@ new_t4 = (
 assert old_t4 in text, 'T5: Table 4 block not found'
 text = text.replace(old_t4, new_t4)
 
-# ──────────────────────────────────────────────────────────
-# 7. T6 — Merge Table 6 last 2 columns + English caption
-# ──────────────────────────────────────────────────────────
 old_t6 = (
     '**表 6：OBB 输出列布局假设与实际布局对照**\n\n'
     '| 列区间 | 解析器初始假设 | 实际 NCNN 输出语义 | 错误后果 | 修复后处理 |\n'
@@ -158,9 +132,6 @@ new_t6 = (
 assert old_t6 in text, 'T6: Table 6 block not found'
 text = text.replace(old_t6, new_t6)
 
-# ──────────────────────────────────────────────────────────
-# 8. In-text cross-references  (figure sub-refs first, then general)
-# ──────────────────────────────────────────────────────────
 text = text.replace('图 8(a)', 'Figure 8(a)')
 text = text.replace('图 8(b)', 'Figure 8(b)')
 text = text.replace('图 8(c)', 'Figure 8(c)')
@@ -178,22 +149,15 @@ for line in lines:
     result_lines.append(line)
 text = '\n'.join(result_lines)
 
-# ──────────────────────────────────────────────────────────
-# 9. Update "Table 4" cross-ref in body text after split
-# ──────────────────────────────────────────────────────────
 text = text.replace(
     'Figure 4 与 Table 4 互补：图示给出流程顺序，Table 4 给出每阶段触发条件、实例化脚本与退出判据。',
     'Figure 4 与 Tables 4a/4b 互补：图示给出流程顺序，Table 4a 给出每阶段触发条件与退出判据，Table 4b 列出实例化脚本。'
 )
 
-# ──────────────────────────────────────────────────────────
-# Write and verify
-# ──────────────────────────────────────────────────────────
 src.write_text(text, encoding='utf-8')
 
-# Sanity checks
 remaining_fig = [m for m in re.findall(r'图\s*\d', text)
-                 if '图 8' not in m or True]  # all should be gone
+                 if '图 8' not in m or True]
 remaining_tbl = re.findall(r'(?<!字段|统计|样例|指标|数据|说明|证据|流程|实例|映射|分析|汇)表\s*\d', text)
 print('Remaining 图N refs:', len(remaining_fig), remaining_fig[:10])
 print('Remaining 表N refs:', len(remaining_tbl), remaining_tbl[:10])

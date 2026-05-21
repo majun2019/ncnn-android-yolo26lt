@@ -1,18 +1,3 @@
-#!/usr/bin/env python3
-"""
-YOLO26 E2E模式测试脚本
-
-测试内容：
-1. 验证E2E模型导出
-2. 检查输出格式
-3. 对比推理性能
-4. 验证检测结果
-
-使用方法：
-    python test_yolo26_e2e.py
-    python test_yolo26_e2e.py --model yolo26n.pt --image test.jpg
-"""
-
 import os
 import sys
 import time
@@ -20,7 +5,6 @@ import argparse
 from pathlib import Path
 
 def check_dependencies():
-    """检查依赖"""
     try:
         import ultralytics
         print(f"✓ ultralytics 版本: {ultralytics.__version__}")
@@ -45,7 +29,6 @@ def check_dependencies():
     return True
 
 def test_export_formats(model_path: str):
-    """测试导出格式"""
     from ultralytics import YOLO
     
     print("\n" + "="*60)
@@ -55,7 +38,6 @@ def test_export_formats(model_path: str):
     model = YOLO(model_path)
     model_name = Path(model_path).stem
     
-    # 测试 One-to-Many 导出
     print(f"\n[1/2] 导出 One-to-Many 模式...")
     try:
         export_path_many = model.export(format="ncnn", end2end=False)
@@ -64,7 +46,6 @@ def test_export_formats(model_path: str):
         print(f"  ✗ 导出失败: {e}")
         return False
     
-    # 测试 E2E 导出
     print(f"\n[2/2] 导出 E2E (One-to-One) 模式...")
     try:
         export_path_e2e = model.export(format="ncnn", end2end=True)
@@ -76,7 +57,6 @@ def test_export_formats(model_path: str):
     return True
 
 def test_inference_speed(model_path: str, num_runs: int = 50):
-    """测试推理速度对比"""
     from ultralytics import YOLO
     import numpy as np
     
@@ -84,17 +64,14 @@ def test_inference_speed(model_path: str, num_runs: int = 50):
     print("测试2: 推理速度对比")
     print("="*60)
     
-    # 创建测试图像
     test_image = np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
     
     model = YOLO(model_path)
     
-    # 预热
     print("\n预热中...")
     for _ in range(5):
         model.predict(test_image, verbose=False)
     
-    # One-to-Many 模式测试
     print(f"\n[1/2] One-to-Many 模式 ({num_runs}次推理)...")
     times_many = []
     for _ in range(num_runs):
@@ -106,8 +83,6 @@ def test_inference_speed(model_path: str, num_runs: int = 50):
     std_many = np.std(times_many) * 1000
     print(f"  平均耗时: {avg_many:.2f} ± {std_many:.2f} ms")
     
-    # E2E 模式需要重新加载模型
-    # 注意：这里测试的是Python端，Android端的性能提升会更明显
     print(f"\n[2/2] E2E模式 (需要导出后的NCNN模型测试)")
     print(f"  ⚠ Python端测试不反映Android端真实性能")
     print(f"  ⚠ Android端E2E模式预期速度提升: ~43%")
@@ -115,7 +90,6 @@ def test_inference_speed(model_path: str, num_runs: int = 50):
     return avg_many
 
 def test_output_format(model_path: str):
-    """测试输出格式"""
     from ultralytics import YOLO
     import numpy as np
     
@@ -138,7 +112,6 @@ def test_output_format(model_path: str):
         print(f"  置信度: {box.conf[0].item():.4f}")
         print(f"  类别ID: {int(box.cls[0].item())}")
     
-    # 预期的Android端输出格式
     print(f"\n预期Android端输出格式:")
     print(f"  One-to-Many: (8400, 84) - 需要NMS后处理")
     print(f"  E2E模式:     (300, 6)  - 直接可用，无需NMS")
@@ -146,7 +119,6 @@ def test_output_format(model_path: str):
     return True
 
 def test_detection_accuracy(model_path: str, image_path: str = None):
-    """测试检测精度"""
     from ultralytics import YOLO
     import numpy as np
     
@@ -160,7 +132,6 @@ def test_detection_accuracy(model_path: str, image_path: str = None):
         print(f"\n使用测试图像: {image_path}")
         results = model.predict(image_path, verbose=False)
     else:
-        # 使用内置测试
         print(f"\n使用COCO验证集样本...")
         try:
             results = model.predict("https://ultralytics.com/images/bus.jpg", verbose=False)
@@ -171,10 +142,8 @@ def test_detection_accuracy(model_path: str, image_path: str = None):
     print(f"\n检测结果:")
     print(f"  检测到 {len(results[0].boxes)} 个目标")
     
-    # 获取类别名称
     names = model.names
     
-    # 打印检测结果
     for i, box in enumerate(results[0].boxes):
         cls_id = int(box.cls[0].item())
         conf = box.conf[0].item()
@@ -184,7 +153,6 @@ def test_detection_accuracy(model_path: str, image_path: str = None):
     return True
 
 def generate_android_test_commands():
-    """生成Android测试命令"""
     print("\n" + "="*60)
     print("Android端测试指南")
     print("="*60)
@@ -224,7 +192,6 @@ def generate_android_test_commands():
 """)
 
 def verify_ncnn_files():
-    """验证NCNN文件"""
     print("\n" + "="*60)
     print("测试5: NCNN文件验证")
     print("="*60)
@@ -232,12 +199,10 @@ def verify_ncnn_files():
     assets_dir = Path("app/src/main/assets")
     
     expected_files = [
-        # One-to-Many
         ("yolo26n.ncnn.param", "yolo26n.ncnn.bin", "检测-OneToMany"),
         ("yolo26n_seg.ncnn.param", "yolo26n_seg.ncnn.bin", "分割-OneToMany"),
         ("yolo26n_pose.ncnn.param", "yolo26n_pose.ncnn.bin", "姿态-OneToMany"),
         ("yolo26n_obb.ncnn.param", "yolo26n_obb.ncnn.bin", "旋转框-OneToMany"),
-        # E2E
         ("yolo26n_safehat.ncnn.param", "yolo26n_safehat.ncnn.bin", "检测-SafeHat主资产"),
         ("yolo26n_e2e.ncnn.param", "yolo26n_e2e.ncnn.bin", "检测-E2E"),
         ("yolo26n_seg_e2e.ncnn.param", "yolo26n_seg_e2e.ncnn.bin", "分割-E2E"),
@@ -282,10 +247,8 @@ def main():
     print("YOLO26 E2E模式测试套件")
     print("="*60)
     
-    # 检查依赖
     has_cv2 = check_dependencies()
     
-    # 检查模型文件
     if not os.path.exists(args.model):
         print(f"\n⚠ 模型文件不存在: {args.model}")
         print("请先下载YOLO26模型或指定正确的模型路径")
@@ -293,12 +256,10 @@ def main():
         print("  from ultralytics import YOLO")
         print("  model = YOLO('yolo26n.pt')  # 自动下载")
         
-        # 仍然运行部分测试
         verify_ncnn_files()
         generate_android_test_commands()
         return
     
-    # 运行测试
     print(f"\n使用模型: {args.model}")
     
     if not args.skip_export:

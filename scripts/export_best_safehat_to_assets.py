@@ -1,15 +1,3 @@
-#!/usr/bin/env python3
-"""
-将自训练 best.pt 导出为 NCNN 并覆盖 Android assets 的检测模型。
-
-默认行为：
-- 输入: runs/detect/runs/train/yolo26n_safehat/weights/best.pt
-- 导出: end2end=False (O2M, 期望输出 8400 x (nc+4))
-- 主资产: app/src/main/assets/yolo26n_safehat.ncnn.param/.bin
-- 兼容别名: app/src/main/assets/yolo26n_e2e.ncnn.param/.bin
-    （保持旧脚本与旧日志关键词仍可继续使用）
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -18,7 +6,6 @@ from pathlib import Path
 
 import numpy as np
 from ultralytics import YOLO
-
 
 def ncnn_output_shape(param_path: Path, bin_path: Path, input_size: int = 640):
     import ncnn
@@ -44,7 +31,6 @@ def ncnn_output_shape(param_path: Path, bin_path: Path, input_size: int = 640):
     assert ret == 0, "extract out0 failed"
     return int(out.w), int(out.h), int(out.c)
 
-
 def backup_and_copy(src_param: Path, src_bin: Path, dst_prefix: Path) -> tuple[Path, Path]:
     dst_param = Path(str(dst_prefix) + ".param")
     dst_bin = Path(str(dst_prefix) + ".bin")
@@ -58,7 +44,6 @@ def backup_and_copy(src_param: Path, src_bin: Path, dst_prefix: Path) -> tuple[P
     shutil.copy2(src_param, dst_param)
     shutil.copy2(src_bin, dst_bin)
     return dst_param, dst_bin
-
 
 def main():
     parser = argparse.ArgumentParser(description="导出 best.pt 到 Android assets")
@@ -80,10 +65,8 @@ def main():
     print(f"[2/4] 导出 NCNN, end2end={args.end2end}, imgsz={args.imgsz}")
     model.export(format="ncnn", imgsz=args.imgsz, half=False, end2end=args.end2end)
 
-    # ultralytics 默认导出目录: <stem>_ncnn_model
     export_dir = pt.parent / f"{pt.stem}_ncnn_model"
     if not export_dir.exists():
-        # 兼容在 cwd 生成目录的情况
         export_dir = root / f"{pt.stem}_ncnn_model"
 
     src_param = export_dir / "model.ncnn.param"
@@ -111,7 +94,6 @@ def main():
         print("期望 O2M: 常见 (8400, nc+4)；safehat(10类) 应接近 (8400,14)")
 
     print("完成。请重新编译并在 Android 端观察 Output shape / Total detected。")
-
 
 if __name__ == "__main__":
     main()

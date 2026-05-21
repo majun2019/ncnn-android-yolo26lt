@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Fix pre-NMS topk to be per-class for SafeHat."""
 from pathlib import Path
 
 workspace_root = Path(__file__).resolve().parents[1]
@@ -8,18 +6,15 @@ filepath = str(workspace_root / "app" / "src" / "main" / "jni" / "yolo26_det.cpp
 with open(filepath, "r", encoding="utf-8", errors="replace") as f:
     lines = f.readlines()
 
-# Find the topk section
 topk_start = None
 topk_end = None
 nms_comment_line = None
 
 for i, line in enumerate(lines):
     if "int pre_nms_topk = 300;" in line or "int pre_nms_topk = 250;" in line:
-        topk_start = i - 1  # Include the comment above
+        topk_start = i - 1
     if topk_start and "proposals.resize(pre_nms_topk);" in line:
-        # Find the closing brace
-        topk_end = i + 1  # After the resize line
-        # Look for closing brace
+        topk_end = i + 1
         for j in range(i+1, min(i+5, len(lines))):
             if lines[j].strip() == "}":
                 topk_end = j + 1
@@ -33,7 +28,6 @@ print(f"Lines to replace:")
 for i in range(topk_start, topk_end):
     print(f"  {i+1}: {lines[i].rstrip()}")
 
-# New per-class topk code
 new_code = """    // Pre-NMS topk selection
     if (inferred_num_class == 10) {
         // SafeHat PER-CLASS topk: ensure every class gets represented
@@ -79,7 +73,6 @@ with open(filepath, "w", encoding="utf-8") as f:
 
 print("Done. Per-class topk implemented.")
 
-# Verify
 with open(filepath, "r", encoding="utf-8", errors="replace") as f:
     content = f.read()
 

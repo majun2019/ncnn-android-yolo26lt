@@ -1,10 +1,6 @@
-#!/usr/bin/env python3
-"""Generate styled PNG assets for paper figures."""
-
 from pathlib import Path
 
 from PIL import Image, ImageDraw
-
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "runs" / "paper_figures"
@@ -15,10 +11,6 @@ BORDER = (180, 185, 192)
 PANEL_BORDER = 1
 OUTER_PADDING = 0
 
-# Pixels to crop from top of each cell in val_batch grid to remove embedded
-# filename labels (Ultralytics draws filenames at y~0 inside each cell).
-# The label background occupies y=2-12 and the text descenders reach y~44;
-# 50 px gives a safe margin above actual image content.
 GRID_CROP_TOP = 50
 
 FIGURES = [
@@ -33,17 +25,15 @@ FIGURES = [
         "target": OUTPUT_DIR / "figure8b_val_pred_styled.png",
         "journal_name": "Figure_8b.png",
         "max_width": 1240,
-        "clean_grid": True,  # strip per-cell filename labels
+        "clean_grid": True,
     },
 ]
-
 
 def fit_image(image: Image.Image, max_width: int) -> Image.Image:
     if image.width <= max_width:
         return image
     target_height = round(image.height * max_width / image.width)
     return image.resize((max_width, target_height), Image.Resampling.LANCZOS)
-
 
 def framed_figure(image: Image.Image) -> Image.Image:
     panel_width = image.width + PANEL_BORDER * 2
@@ -54,16 +44,9 @@ def framed_figure(image: Image.Image) -> Image.Image:
     canvas.paste(image, (PANEL_BORDER, PANEL_BORDER))
     return canvas
 
-
 def clean_val_grid(image: Image.Image, cols: int = 3) -> Image.Image:
-    """Remove per-cell filename text from a Ultralytics validation batch mosaic.
-
-    Ultralytics renders the source filename at the top-left of every cell
-    in the NxN mosaic.  We slice each cell, crop off the top GRID_CROP_TOP
-    rows, and reassemble.
-    """
     W, H = image.size
-    rows = H // (W // cols)  # typically equal to cols for square mosaics
+    rows = H // (W // cols)
     cell_w = W // cols
     cell_h = H // rows
     out_cell_h = cell_h - GRID_CROP_TOP
@@ -76,7 +59,6 @@ def clean_val_grid(image: Image.Image, cols: int = 3) -> Image.Image:
             out.paste(cell_clean, (c * cell_w, r * out_cell_h))
     return out
 
-
 def build_single_assets() -> None:
     for figure in FIGURES:
         image = Image.open(figure["source"]).convert("RGB")
@@ -87,7 +69,6 @@ def build_single_assets() -> None:
         styled.save(figure["target"], format="PNG")
         print(f"saved: {figure['target']}")
 
-
 def export_montage_png() -> None:
     png_source = ROOT / "runs" / "paper_figures" / "figure8c_five_task_montage.png"
     jpg_source = ROOT / "runs" / "androidtest" / "figure8_five_task_montage.jpg"
@@ -97,31 +78,25 @@ def export_montage_png() -> None:
     image.save(target, format="PNG")
     print(f"saved: {target}")
 
-
 def export_to_testpics() -> None:
-    """Copy/generate journal-named copies to testpics/ (MDPI naming: Figure_N.png)."""
     TESTPICS_DIR.mkdir(parents=True, exist_ok=True)
-    # 8a and 8b come from the styled outputs already built
     for figure in FIGURES:
         src = figure["target"]
         dst = TESTPICS_DIR / figure["journal_name"]
         img = Image.open(src)
         img.save(dst, format="PNG")
         print(f"testpics: {dst}")
-    # 8c
     src_8c = OUTPUT_DIR / "figure8c_five_task_montage.png"
     dst_8c = TESTPICS_DIR / "Figure_8c.png"
     img = Image.open(src_8c)
     img.save(dst_8c, format="PNG")
     print(f"testpics: {dst_8c}")
 
-
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     build_single_assets()
     export_montage_png()
     export_to_testpics()
-
 
 if __name__ == "__main__":
     main()
