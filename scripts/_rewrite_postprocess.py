@@ -25,11 +25,7 @@ if func_end < 0:
 func_end = content.rfind("\n", 0, func_end)
 func_end = content.rfind("\n", 0, func_end)
 
-new_proposals_func = r"""// YOLO26: O2M head post-processing (transposed format)
-// pred: h=(4+nc), w=8400.  Row 0-3 = bbox xywh (absolute pixels), Row 4+ = class sigmoid probs
-// Uses mild temperature scaling (T=3.0) to compress saturated scores (0.999->0.85)
-// NO margin_gate - SafeHat classes legitimately overlap (Person + Safety Vest on same box)
-static void generate_proposals_yolo26_transposed(const ncnn::Mat& pred, const std::vector<int>& strides, const ncnn::Mat& in_pad, float prob_threshold, std::vector<Object>& objects)
+new_proposals_func = r"""static void generate_proposals_yolo26_transposed(const ncnn::Mat& pred, const std::vector<int>& strides, const ncnn::Mat& in_pad, float prob_threshold, std::vector<Object>& objects)
 {
     const int img_w = in_pad.w;
     const int img_h = in_pad.h;
@@ -44,7 +40,6 @@ static void generate_proposals_yolo26_transposed(const ncnn::Mat& pred, const st
 
     for (int box_idx = 0; box_idx < total_boxes; box_idx++)
     {
-        // Find top class
         int label = -1;
         float score = -FLT_MAX;
         for (int k = 0; k < num_class; k++)
@@ -60,9 +55,6 @@ static void generate_proposals_yolo26_transposed(const ncnn::Mat& pred, const st
         if (label < 0 || !is_valid_f32(score))
             continue;
 
-        // Mild temperature calibration: compress saturated sigmoid scores
-        // T=3.0 maps: 0.999->0.85, 0.99->0.74, 0.95->0.63, 0.90->0.56, 0.80->0.47
-        // This preserves ordering but makes scores more informative
         float display_score = score;
         {
             const float eps = 1e-6f;
@@ -74,7 +66,6 @@ static void generate_proposals_yolo26_transposed(const ncnn::Mat& pred, const st
         if (display_score < prob_threshold)
             continue;
 
-        // bbox
         float x_center = pred.row(0)[box_idx];
         float y_center = pred.row(1)[box_idx];
         float bw = pred.row(2)[box_idx];
@@ -92,7 +83,6 @@ static void generate_proposals_yolo26_transposed(const ncnn::Mat& pred, const st
         if (bw > img_w * 0.95f || bh > img_h * 0.95f)
             continue;
 
-        // Visible area filter
         {
             float vis_x0 = std::max(0.f, x_center - bw * 0.5f);
             float vis_y0 = std::max(0.f, y_center - bh * 0.5f);
@@ -123,16 +113,13 @@ static void generate_proposals_yolo26_transposed(const ncnn::Mat& pred, const st
         obj.prob = display_score;
         objects.push_back(obj);
 
-        // SafeHat multi-class: also emit secondary class proposals for same box
-        // Person often competes with Safety Vest/No-Safety Vest at the same location
         if (num_class == 10)
         {
             for (int k = 0; k < num_class; k++)
             {
-                if (k == label) continue; // already added
+                if (k == label) continue;
                 float s = pred.row(4 + k)[box_idx];
                 if (s < prob_threshold) continue;
-                // Temperature calibrate
                 float eps2 = 1e-6f;
                 float p2 = std::max(eps2, std::min(1.f - eps2, s));
                 float logit2 = logf(p2 / (1.f - p2));
@@ -163,8 +150,6 @@ old_nms = """    const int builtin_class_count = 80;
     const bool nms_agnostic = (inferred_num_class > 0 && inferred_num_class != builtin_class_count) || too_dense_scene;"""
 
 new_nms = """    const int builtin_class_count = 80;
-    // SafeHat: per-class NMS is CRITICAL because Person/Safety Vest/Hardhat
-    // legitimately overlap on the same person. Agnostic NMS would kill Person.
     const bool is_safehat = (inferred_num_class == 10);
     const bool nms_agnostic = !is_safehat && ((inferred_num_class > 0 && inferred_num_class != builtin_class_count) || proposals_before_trim > 1500);"""
 
@@ -180,7 +165,6 @@ old_topk = """    int pre_nms_topk = 250;
 
 new_topk = """    int pre_nms_topk = 300;
     if (inferred_num_class == 10) {
-        // SafeHat with per-class NMS: need more proposals to keep all classes
         pre_nms_topk = 500;
     } else if (proposals_before_trim > 6000) {
         pre_nms_topk = 60;
@@ -202,7 +186,7 @@ old_maxdet = """    int max_det = 20;
 
 new_maxdet = """    int max_det = 20;
     if (inferred_num_class == 10) {
-        max_det = 30; // SafeHat per-class NMS: allow more detections
+        max_det = 30;
     } else if (proposals_before_trim > 6000) {
         max_det = 8;
     } else if (proposals_before_trim > 3000) {
@@ -218,7 +202,7 @@ new_cap = "    const int max_per_class = (inferred_num_class == 10) ? 5 : (propo
 content = content.replace(old_cap, new_cap)
 
 old_second_nms = "        nms_sorted_bboxes(objects, picked_final, 0.45f, true);"
-new_second_nms = "        nms_sorted_bboxes(objects, picked_final, 0.45f, !is_safehat); // SafeHat: per-class NMS"
+new_second_nms = "        nms_sorted_bboxes(objects, picked_final, 0.45f, !is_safehat);"
 content = content.replace(old_second_nms, new_second_nms)
 
 old_final_cap = "        const int final_cap = proposals_before_trim > 3000 ? 8 : 12;"
@@ -237,7 +221,7 @@ if idx >= 0:
 
 content = content.replace(
     "        nms_sorted_bboxes(objects, picked_final, 0.45f, !is_safehat); // SafeHat: per-class NMS",
-    "        nms_sorted_bboxes(objects, picked_final, 0.45f, !(inferred_num_class == 10)); // SafeHat: per-class NMS"
+    "        nms_sorted_bboxes(objects, picked_final, 0.45f, !(inferred_num_class == 10));"
 )
 content = content.replace(
     "        const int final_cap = (inferred_num_class == 10) ? 20 : (proposals_before_trim > 3000 ? 8 : 12);",

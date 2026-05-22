@@ -1,11 +1,10 @@
-# YOLO26 安全帽检测数据集配置
-# 注意：":" 之后一定要有空格，否则会报错
+# Yolo26n for safety helmet detection
 
-# 数据集路径（相对于项目根目录）
-path: ../data  # 数据集根目录
-train: train/images  # 训练图像路径 (相对于path)
-val: valid/images    # 验证图像路径 (相对于path)
-test: test/images    # 测试图像路径 (相对于path)
+# dataset path
+path: ../data  
+train: train/images  
+val: valid/images    
+test: test/images   
 #number of classes
 nc: 10
 

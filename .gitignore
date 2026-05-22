@@ -66,3 +66,43 @@ desktop.ini
 # ── Root-level model weights (explicitly allowed) ────────────────────────────
 !/yolo26n.pt
 !/best.pt
+
+# ── scripts/ — unrelated to Android project runtime ──────────────────────────
+# Paper / figure generation
+scripts/build_figure8_ab.py
+scripts/build_figure8_combined.py
+scripts/build_figure8_montage.py
+scripts/build_paper_figure_assets.py
+scripts/_patch_captions.py
+scripts/_patch_contributions.py
+scripts/_patch_sec2.py
+
+# Benchmarking / latency collection (paper results)
+scripts/benchmark_yolo26.py
+scripts/collect_latency.py
+
+# Conversion diagnostics
+scripts/conversion_detail_check.py
+scripts/conversion_matrix_check.py
+scripts/diagnose_background_scores.py
+scripts/diagnose_model.py
+scripts/trace_conversion_pipeline.py
+scripts/verify_ncnn_output.py
+
+# Pipeline preflight / hypothesis tests
+scripts/preflight_safehat_pipeline.py
+scripts/test_letterbox_hypothesis.py
+scripts/test_yolo26_e2e.py
+
+# Training data preparation (one-off)
+scripts/mine_hard_negatives.py
+scripts/quick_finetune_confcal_v3.py
+
+# One-time C++ patch scripts (already applied)
+scripts/_fix_encoding.py
+scripts/_fix_threshold.py
+scripts/_fix_topk.py
+scripts/_rewrite_postprocess.py
+
+# Miscellaneous utilities
+scripts/_quick_asset_stats.py

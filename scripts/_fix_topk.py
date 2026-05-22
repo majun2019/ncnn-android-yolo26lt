@@ -28,16 +28,11 @@ print(f"Lines to replace:")
 for i in range(topk_start, topk_end):
     print(f"  {i+1}: {lines[i].rstrip()}")
 
-new_code = """    // Pre-NMS topk selection
-    if (inferred_num_class == 10) {
-        // SafeHat PER-CLASS topk: ensure every class gets represented
-        // Without this, high-scoring Machinery/Vehicle proposals fill the global topk
-        // and Person proposals (with lower scores) get dropped entirely
-        const int per_class_topk = 50; // 50 per class x 10 classes = max 500
+new_code = """    if (inferred_num_class == 10) {
+        const int per_class_topk = 50;
         std::vector<int> class_count(inferred_num_class, 0);
         std::vector<Object> balanced_proposals;
         balanced_proposals.reserve(per_class_topk * inferred_num_class);
-        // proposals are already sorted by score (descending)
         for (size_t i = 0; i < proposals.size(); i++) {
             int cls = proposals[i].label;
             if (cls >= 0 && cls < inferred_num_class && class_count[cls] < per_class_topk) {
@@ -46,7 +41,6 @@ new_code = """    // Pre-NMS topk selection
             }
         }
         proposals.swap(balanced_proposals);
-        // Re-sort after per-class selection
         qsort_descent_inplace(proposals);
 
         __android_log_print(ANDROID_LOG_DEBUG, "ncnn",
