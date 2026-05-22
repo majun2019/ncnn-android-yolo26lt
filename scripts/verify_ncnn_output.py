@@ -163,32 +163,7 @@ def generate_expected_output_info():
     print("="*60)
     
     print("""
-┌────────────────┬─────────────────┬─────────────────┬─────────────────┐
-│ 任务           │ YOLO26 Legacy   │ YOLO26 Many     │ YOLO26 E2E      │
-├────────────────┼─────────────────┼─────────────────┼─────────────────┤
-│ Detection      │ (8400, 144)     │ (8400, 84)      │ (300, 6)        │
-│ Segmentation   │ (8400, 176)     │ (8400, 116)     │ (300, 38)       │
-│ Pose           │ (8400, 65)      │ (8400, 5)       │ (300, 57)       │
-│ OBB            │ (8400, 79)      │ (8400, 19)      │ (300, 7)        │
-└────────────────┴─────────────────┴─────────────────┴─────────────────┘
-
-E2E模式输出详解:
-  Detection (300, 6):
-    [x_center, y_center, width, height, class_id, confidence]
-  
-  Segmentation (300, 38):
-    [x, y, w, h, class_id, conf, mask_coeffs(32)]
-  
-  Pose (300, 57):
-    [x, y, w, h, class_id, conf, keypoints(17*3)]
-  
-  OBB (300, 7):
-    [x_center, y_center, width, height, angle, class_id, confidence]
-
-C++自动检测逻辑:
-  if (out.w == 6 && out.h <= 300)  -> E2E Detection
-  if (out.w == 84)                  -> YOLO26 One-to-Many
-    if (out.w == 144)                 -> YOLO26 Legacy
+对于One-to-One模型，输出层通常为一个包含所有检测结果的Blob，格式为 [num_boxes, 4 + num_classes]，其中每行包含 [x1, y1, x2, y2, class_scores...]。
 """)
 
 def main():
