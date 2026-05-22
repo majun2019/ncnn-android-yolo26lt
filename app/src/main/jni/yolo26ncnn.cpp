@@ -1,17 +1,3 @@
-// Tencent is pleased to support the open source community by making ncnn available.
-//
-// Copyright (C) 2026 THL A29 Limited, a Tencent company. All rights reserved.
-//
-// Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
-// in compliance with the License. You may obtain a copy of the License at
-//
-// https://opensource.org/licenses/BSD-3-Clause
-//
-// Unless required by applicable law or agreed to in writing, software distributed
-// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
-
 #include <android/asset_manager_jni.h>
 #include <android/native_window_jni.h>
 #include <android/native_window.h>
@@ -35,7 +21,7 @@
 
 #if __ARM_NEON
 #include <arm_neon.h>
-#endif // __ARM_NEON
+#endif
 
 static int draw_unsupported(cv::Mat& rgb)
 {
@@ -58,7 +44,7 @@ static int draw_unsupported(cv::Mat& rgb)
 
 static int draw_fps(cv::Mat& rgb)
 {
-    // resolve moving average
+
     float avg_fps = 0.f;
     {
         static double t0 = 0.f;
@@ -113,7 +99,7 @@ static int draw_fps(cv::Mat& rgb)
 static YOLO26* g_yolo26 = 0;
 static ncnn::Mutex lock;
 static const bool kConversionOfflineProbeEnabled = false;
-static int g_current_taskid = -1;  // 0=det,1=seg,2=pose,3=cls,4=obb  updated in loadModel
+static int g_current_taskid = -1;
 
 static const char* taskid_to_name(int taskid)
 {
@@ -143,7 +129,7 @@ public:
 
 void MyNdkCamera::on_image_render(cv::Mat& rgb) const
 {
-    // yolo26
+
     {
         ncnn::MutexLockGuard g(lock);
 
@@ -151,7 +137,6 @@ void MyNdkCamera::on_image_render(cv::Mat& rgb) const
         {
             std::vector<Object> objects;
 
-            // --- YOLO26BENCH latency instrumentation ---
             static int   s_last_taskid = -1;
             static int   s_frame_count = 0;
             static float s_ms_sum      = 0.f;
@@ -160,7 +145,7 @@ void MyNdkCamera::on_image_render(cv::Mat& rgb) const
 
             if (g_current_taskid != s_last_taskid)
             {
-                // Task switched: reset per-task counters
+
                 s_last_taskid = g_current_taskid;
                 s_frame_count = 0;
                 s_ms_sum      = 0.f;
@@ -181,13 +166,11 @@ void MyNdkCamera::on_image_render(cv::Mat& rgb) const
             if (detect_ms > s_ms_max) s_ms_max = detect_ms;
             s_frame_count++;
 
-            // Per-frame log (every frame) — parseable by collect_latency.py
             __android_log_print(ANDROID_LOG_INFO, "YOLO26BENCH",
                 "FRAME task=%d name=%s detect_ms=%.2f objects=%zu",
                 g_current_taskid, taskid_to_name(g_current_taskid),
                 detect_ms, objects.size());
 
-            // Running summary every 30 frames
             if (s_frame_count % 30 == 0)
             {
                 __android_log_print(ANDROID_LOG_INFO, "YOLO26BENCH",
@@ -198,7 +181,6 @@ void MyNdkCamera::on_image_render(cv::Mat& rgb) const
                     s_ms_min, s_ms_max,
                     1000.f / (s_ms_sum / s_frame_count));
             }
-            // ------------------------------------------
 
             g_yolo26->draw(rgb, objects);
         }
@@ -243,12 +225,9 @@ JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved)
     g_camera = 0;
 }
 
-// public native boolean loadModel(AssetManager mgr, int taskid, int modelid, int cpugpu);
 JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_loadModel(JNIEnv* env, jobject thiz, jobject assetManager, jint taskid, jint modelid, jint cpugpu)
 {
-    // taskid: 0=det, 1=seg, 2=pose, 3=cls, 4=obb
-    // modelid: 保留但不使用（只有yolo26n E2E模式）
-    // cpugpu: 0=CPU, 1=GPU, 2=turnip
+
     if (taskid < 0 || taskid > 4 || cpugpu < 0 || cpugpu > 2)
     {
         return JNI_FALSE;
@@ -258,19 +237,15 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_loadModel(JNIE
 
     __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "loadModel %p", mgr);
 
-    // 任务后缀
     const char* tasknames[5] =
     {
-        "_e2e",       // det: yolo26n_e2e
-        "_seg_e2e",   // seg: yolo26n_seg_e2e
-        "_pose_e2e",  // pose: yolo26n_pose_e2e
-        "_cls",       // cls: yolo26n_cls (分类不需要e2e)
-        "_obb_e2e"    // obb: yolo26n_obb_e2e
+        "_e2e",
+        "_seg_e2e",
+        "_pose_e2e",
+        "_cls",
+        "_obb_e2e"
     };
 
-    // 构建模型文件路径。
-    // Detect task prefers a semantic SafeHat alias, then falls back to the legacy
-    // yolo26n_e2e asset name to stay compatible with existing packaged assets.
     std::string modelstem;
     if (taskid == 0)
     {
@@ -295,21 +270,18 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_loadModel(JNIE
 
     __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Loading YOLO26 model: %s", parampath.c_str());
 
-    // Update global task id for latency logging in on_image_render
     g_current_taskid = (int)taskid;
     __android_log_print(ANDROID_LOG_INFO, "YOLO26BENCH",
         "LOAD task=%d name=%s model=%s",
         (int)taskid, taskid_to_name((int)taskid), parampath.c_str());
-    
+
     bool use_gpu = (int)cpugpu == 1;
     bool use_turnip = (int)cpugpu == 2;
 
-    // 转换细节排查阶段：强制CPU路径，排除移动端Vulkan/FP16对分数分布的干扰
     use_gpu = false;
     use_turnip = false;
     __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "ConversionDiag: force CPU inference path (cpugpu=%d)", (int)cpugpu);
 
-    // reload
     {
         ncnn::MutexLockGuard g(lock);
 
@@ -318,7 +290,7 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_loadModel(JNIE
             static int old_cpugpu = -1;
             if (taskid != old_taskid || cpugpu != old_cpugpu)
             {
-                // taskid or cpugpu changed
+
                 delete g_yolo26;
                 g_yolo26 = 0;
             }
@@ -348,8 +320,6 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_loadModel(JNIE
 
             }
 
-            // Conversion diagnostic: run one offline synthetic frame through detector
-            // to isolate camera input pipeline from model/runtime behavior.
             if (kConversionOfflineProbeEnabled && taskid == 0)
             {
                 cv::Mat probe(480, 640, CV_8UC3);
@@ -369,8 +339,7 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_loadModel(JNIE
                 g_yolo26->detect(probe, probe_objects);
                 __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "OfflineProbe: end synthetic frame detect objects=%zu", probe_objects.size());
             }
-            
-            // E2E模式固定使用640尺寸
+
             g_yolo26->set_det_target_size(640);
         }
     }
@@ -378,7 +347,6 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_loadModel(JNIE
     return JNI_TRUE;
 }
 
-// public native boolean setDetectThresholds(float probThreshold, float nmsThreshold);
 JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_setDetectThresholds(JNIEnv* env, jobject thiz, jfloat probThreshold, jfloat nmsThreshold)
 {
     ncnn::MutexLockGuard g(lock);
@@ -392,7 +360,6 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_setDetectThres
     return JNI_TRUE;
 }
 
-// public native boolean openCamera(int facing);
 JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_openCamera(JNIEnv* env, jobject thiz, jint facing)
 {
     if (facing < 0 || facing > 1)
@@ -405,7 +372,6 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_openCamera(JNI
     return JNI_TRUE;
 }
 
-// public native boolean closeCamera();
 JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_closeCamera(JNIEnv* env, jobject thiz)
 {
     __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "closeCamera");
@@ -415,7 +381,6 @@ JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_closeCamera(JN
     return JNI_TRUE;
 }
 
-// public native boolean setOutputWindow(Surface surface);
 JNIEXPORT jboolean JNICALL Java_com_tencent_yolo26ncnn_YOLO26Ncnn_setOutputWindow(JNIEnv* env, jobject thiz, jobject surface)
 {
     ANativeWindow* win = ANativeWindow_fromSurface(env, surface);

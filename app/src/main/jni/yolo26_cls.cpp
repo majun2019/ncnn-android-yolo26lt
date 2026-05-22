@@ -1,27 +1,3 @@
-// Tencent is pleased to support the open source community by making ncnn available.
-//
-// Copyright (C) 2025 THL A29 Limited, a Tencent company. All rights reserved.
-//
-// Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
-// in compliance with the License. You may obtain a copy of the License at
-//
-// https://opensource.org/licenses/BSD-3-Clause
-//
-// Unless required by applicable law or agreed to in writing, software distributed
-// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
-
-// 1. install
-//      pip3 install -U ultralytics pnnx ncnn
-// 2. export yolo26-cls torchscript
-//      yolo export model=yolo26n-cls.pt format=torchscript
-// 3. convert torchscript with static shape
-//      pnnx yolo26n-cls.torchscript
-// 4. now you get ncnn model files
-//      yolo26n_cls.ncnn.param
-//      yolo26n_cls.ncnn.bin
-
 #include "yolo26.h"
 
 #include <opencv2/core/core.hpp>
@@ -33,7 +9,7 @@
 
 static void get_topk(const ncnn::Mat& cls_scores, int topk, std::vector<Object>& objects)
 {
-    // partial sort topk with index
+
     int size = cls_scores.w;
     std::vector<std::pair<float, int> > vec;
     vec.resize(size);
@@ -61,7 +37,6 @@ int YOLO26_cls::detect(const cv::Mat& rgb, std::vector<Object>& objects)
     int img_w = rgb.cols;
     int img_h = rgb.rows;
 
-    // letterbox pad
     int w = img_w;
     int h = img_h;
     float scale = 1.f;
@@ -80,7 +55,6 @@ int YOLO26_cls::detect(const cv::Mat& rgb, std::vector<Object>& objects)
 
     ncnn::Mat in = ncnn::Mat::from_pixels_resize(rgb.data, ncnn::Mat::PIXEL_RGB, img_w, img_h, w, h);
 
-    // letterbox pad to target_size rectangle
     int wpad = target_size - w;
     int hpad = target_size - h;
     ncnn::Mat in_pad;
@@ -96,7 +70,6 @@ int YOLO26_cls::detect(const cv::Mat& rgb, std::vector<Object>& objects)
     ncnn::Mat out;
     ex.extract("out0", out);
 
-    // return top-5
     get_topk(out, topk, objects);
 
     return 0;
@@ -249,8 +222,6 @@ int YOLO26_cls::draw(cv::Mat& rgb, const std::vector<Object>& objects)
     for (size_t i = 0; i < objects.size(); i++)
     {
         const Object& obj = objects[i];
-
-        // fprintf(stderr, "%d = %.5f\n", obj.label, obj.prob);
 
         char text[256];
         sprintf(text, "%4.1f%% %s", obj.prob * 100, class_names[obj.label]);

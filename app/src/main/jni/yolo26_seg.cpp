@@ -1,113 +1,3 @@
-// Tencent is pleased to support the open source community by making ncnn available.
-//
-// Copyright (C) 2025 THL A29 Limited, a Tencent company. All rights reserved.
-//
-// Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
-// in compliance with the License. You may obtain a copy of the License at
-//
-// https://opensource.org/licenses/BSD-3-Clause
-//
-// Unless required by applicable law or agreed to in writing, software distributed
-// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
-
-// 1. install
-//      pip3 install -U ultralytics pnnx ncnn
-// 2. export yolo26-seg torchscript
-//      yolo export model=yolo26n-seg.pt format=torchscript
-// 3. convert torchscript with static shape
-//      pnnx yolo26n-seg.torchscript
-// 4. modify yolo26n_seg_pnnx.py for dynamic shape inference
-//      A. modify reshape to support dynamic image sizes
-//      B. permute tensor before concat and adjust concat axis
-//      C. drop post-process part
-//      before:
-//          v_202 = v_201.view(1, 32, 6400)
-//          v_208 = v_207.view(1, 32, 1600)
-//          v_214 = v_213.view(1, 32, 400)
-//          v_215 = torch.cat((v_202, v_208, v_214), dim=2)
-//          ...
-//          v_261 = v_230.view(1, 144, 6400)
-//          v_262 = v_245.view(1, 144, 1600)
-//          v_263 = v_260.view(1, 144, 400)
-//          v_264 = torch.cat((v_261, v_262, v_263), dim=2)
-//          ...
-//          v_285 = (v_284, v_196, )
-//          return v_285
-//      after:
-//          v_202 = v_201.view(1, 32, -1).transpose(1, 2)
-//          v_208 = v_207.view(1, 32, -1).transpose(1, 2)
-//          v_214 = v_213.view(1, 32, -1).transpose(1, 2)
-//          v_215 = torch.cat((v_202, v_208, v_214), dim=1)
-//          ...
-//          v_261 = v_230.view(1, 144, -1).transpose(1, 2)
-//          v_262 = v_245.view(1, 144, -1).transpose(1, 2)
-//          v_263 = v_260.view(1, 144, -1).transpose(1, 2)
-//          v_264 = torch.cat((v_261, v_262, v_263), dim=1)
-//          return v_264, v_215, v_196
-//      D. modify area attention for dynamic shape inference
-//      before:
-//          v_95 = self.model_10_m_0_attn_qkv_conv(v_94)
-//          v_96 = v_95.view(1, 2, 128, 400)
-//          v_97, v_98, v_99 = torch.split(tensor=v_96, dim=2, split_size_or_sections=(32,32,64))
-//          v_100 = torch.transpose(input=v_97, dim0=-2, dim1=-1)
-//          v_101 = torch.matmul(input=v_100, other=v_98)
-//          v_102 = (v_101 * 0.176777)
-//          v_103 = F.softmax(input=v_102, dim=-1)
-//          v_104 = torch.transpose(input=v_103, dim0=-2, dim1=-1)
-//          v_105 = torch.matmul(input=v_99, other=v_104)
-//          v_106 = v_105.view(1, 128, 20, 20)
-//          v_107 = v_99.reshape(1, 128, 20, 20)
-//          v_108 = self.model_10_m_0_attn_pe_conv(v_107)
-//          v_109 = (v_106 + v_108)
-//          v_110 = self.model_10_m_0_attn_proj_conv(v_109)
-//      after:
-//          v_95 = self.model_10_m_0_attn_qkv_conv(v_94)
-//          v_96 = v_95.view(1, 2, 128, -1)
-//          v_97, v_98, v_99 = torch.split(tensor=v_96, dim=2, split_size_or_sections=(32,32,64))
-//          v_100 = torch.transpose(input=v_97, dim0=-2, dim1=-1)
-//          v_101 = torch.matmul(input=v_100, other=v_98)
-//          v_102 = (v_101 * 0.176777)
-//          v_103 = F.softmax(input=v_102, dim=-1)
-//          v_104 = torch.transpose(input=v_103, dim0=-2, dim1=-1)
-//          v_105 = torch.matmul(input=v_99, other=v_104)
-//          v_106 = v_105.view(1, 128, v_95.size(2), v_95.size(3))
-//          v_107 = v_99.reshape(1, 128, v_95.size(2), v_95.size(3))
-//          v_108 = self.model_10_m_0_attn_pe_conv(v_107)
-//          v_109 = (v_106 + v_108)
-//          v_110 = self.model_10_m_0_attn_proj_conv(v_109)
-// 5. re-export yolo26-seg torchscript
-//      python3 -c 'import yolo26n_seg_pnnx; yolo26n_seg_pnnx.export_torchscript()'
-// 6. convert new torchscript with dynamic shape
-//      pnnx yolo26n_seg_pnnx.py.pt inputshape=[1,3,640,640] inputshape2=[1,3,320,320]
-// 7. now you get ncnn model files
-//      mv yolo26n_seg_pnnx.py.ncnn.param yolo26n_seg.ncnn.param
-//      mv yolo26n_seg_pnnx.py.ncnn.bin yolo26n_seg.ncnn.bin
-
-// the out blob would be a 2-dim tensor with w=176 h=8400
-//
-//        | bbox-reg 16 x 4       | per-class scores(80) |
-//        +-----+-----+-----+-----+----------------------+
-//        | dx0 | dy0 | dx1 | dy1 |0.1 0.0 0.0 0.5 ......|
-//   all /|     |     |     |     |           .          |
-//  boxes |  .. |  .. |  .. |  .. |0.0 0.9 0.0 0.0 ......|
-//  (8400)|     |     |     |     |           .          |
-//       \|     |     |     |     |           .          |
-//        +-----+-----+-----+-----+----------------------+
-//
-
-//
-//        | mask (32) |
-//        +-----------+
-//        |0.1........|
-//   all /|           |
-//  boxes |0.0........|
-//  (8400)|     .     |
-//       \|     .     |
-//        +-----------+
-//
-
 #include "yolo26.h"
 
 #include "layer.h"
@@ -118,7 +8,7 @@
 #if defined(__ANDROID__) || defined(ANDROID)
 #include <android/log.h>
 #else
-// Fallback stubs for IDE IntelliSense on non-Android hosts
+
 #define ANDROID_LOG_DEBUG 3
 #define ANDROID_LOG_ERROR 6
 static inline int __android_log_print(int, const char*, const char*, ...) { return 0; }
@@ -151,7 +41,7 @@ static void qsort_descent_inplace(std::vector<Object>& objects, int left, int ri
 
         if (i <= j)
         {
-            // swap
+
             std::swap(objects[i], objects[j]);
 
             i++;
@@ -159,13 +49,12 @@ static void qsort_descent_inplace(std::vector<Object>& objects, int left, int ri
         }
     }
 
-    // #pragma omp parallel sections
     {
-        // #pragma omp section
+
         {
             if (left < j) qsort_descent_inplace(objects, left, j);
         }
-        // #pragma omp section
+
         {
             if (i < right) qsort_descent_inplace(objects, i, right);
         }
@@ -204,10 +93,9 @@ static void nms_sorted_bboxes(const std::vector<Object>& objects, std::vector<in
             if (!agnostic && a.label != b.label)
                 continue;
 
-            // intersection over union
             float inter_area = intersection_area(a, b);
             float union_area = areas[i] + areas[picked[j]] - inter_area;
-            // float IoU = inter_area / union_area
+
             if (inter_area / union_area > nms_threshold)
                 keep = 0;
         }
@@ -222,7 +110,6 @@ static inline float sigmoid(float x)
     return 1.0f / (1.0f + expf(-x));
 }
 
-// YOLO26专用：无DFL的proposal生成（分割任务）
 static void generate_proposals_yolo26(const ncnn::Mat& pred, int stride, const ncnn::Mat& in_pad, float prob_threshold, std::vector<Object>& objects)
 {
     const int w = in_pad.w;
@@ -231,9 +118,7 @@ static void generate_proposals_yolo26(const ncnn::Mat& pred, int stride, const n
     const int num_grid_x = w / stride;
     const int num_grid_y = h / stride;
 
-    // YOLO26 seg: 输出格式为 (8400, 116) = (8400, 4+80+32)
-    // 4维bbox + 80维类别 + 32维mask系数
-    const int num_class = pred.w - 4 - 32; // 80 for COCO
+    const int num_class = pred.w - 4 - 32;
 
     for (int y = 0; y < num_grid_y; y++)
     {
@@ -256,12 +141,11 @@ static void generate_proposals_yolo26(const ncnn::Mat& pred, int stride, const n
                     }
                 }
 
-                // score = sigmoid(score);  // 已移除 - E2E模型已内置sigmoid，避免双重sigmoid
             }
 
             if (score >= prob_threshold)
             {
-                // YOLO26: 直接获取4个距离值
+
                 float pred_ltrb[4];
                 for (int k = 0; k < 4; k++)
                 {
@@ -291,7 +175,6 @@ static void generate_proposals_yolo26(const ncnn::Mat& pred, int stride, const n
     }
 }
 
-// YOLO26 (Legacy): 有DFL的proposal生成（兼容旧版本模型）
 static void generate_proposals(const ncnn::Mat& pred, int stride, const ncnn::Mat& in_pad, float prob_threshold, std::vector<Object>& objects)
 {
     const int w = in_pad.w;
@@ -301,7 +184,7 @@ static void generate_proposals(const ncnn::Mat& pred, int stride, const ncnn::Ma
     const int num_grid_y = h / stride;
 
     const int reg_max_1 = 16;
-    const int num_class = pred.w - reg_max_1 * 4; // number of classes. 80 for COCO
+    const int num_class = pred.w - reg_max_1 * 4;
 
     for (int y = 0; y < num_grid_y; y++)
     {
@@ -309,7 +192,6 @@ static void generate_proposals(const ncnn::Mat& pred, int stride, const ncnn::Ma
         {
             const ncnn::Mat pred_grid = pred.row_range(y * num_grid_x + x, 1);
 
-            // find label with max score
             int label = -1;
             float score = -FLT_MAX;
             {
@@ -336,7 +218,7 @@ static void generate_proposals(const ncnn::Mat& pred, int stride, const ncnn::Ma
                     ncnn::Layer* softmax = ncnn::create_layer("Softmax");
 
                     ncnn::ParamDict pd;
-                    pd.set(0, 1); // axis
+                    pd.set(0, 1);
                     pd.set(1, 1);
                     softmax->load_param(pd);
 
@@ -417,7 +299,6 @@ static void generate_proposals(const ncnn::Mat& pred, const std::vector<int>& st
     }
 }
 
-// YOLO26版本：无DFL
 static void generate_proposals_yolo26(const ncnn::Mat& pred, const std::vector<int>& strides, const ncnn::Mat& in_pad, float prob_threshold, std::vector<Object>& objects)
 {
     const int w = in_pad.w;
@@ -446,41 +327,27 @@ static void generate_proposals_yolo26(const ncnn::Mat& pred, const std::vector<i
     }
 }
 
-/**
- * YOLO26 End-to-End Segmentation 处理函数
- * 
- * E2E模式分割输出格式:
- * - out0: (N, 300, 38) = [x, y, w, h, class_id, confidence, mask_coeffs(32)]
- * - out1: mask_feat (用于生成最终掩码)
- * - out2: mask_protos (32通道的原型掩码)
- * 
- * @param pred 检测输出 (300, 38)
- * @param prob_threshold 置信度阈值
- * @param objects 输出检测结果（包含gindex用于后续mask处理）
- */
 static void process_e2e_seg_output(const ncnn::Mat& pred, float prob_threshold, std::vector<Object>& objects)
 {
-    const int num_detections = pred.h; // 300
-    const int det_size = pred.w;       // 38 (6 + 32 mask coeffs)
-    
+    const int num_detections = pred.h;
+    const int det_size = pred.w;
+
     __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Seg E2E mode: num_detections=%d, det_size=%d", num_detections, det_size);
-    
+
     for (int i = 0; i < num_detections; i++)
     {
         const float* det = pred.row(i);
-        
-        // E2E分割输出格式: [x_center, y_center, width, height, class_id, confidence, mask_coeffs...]
+
         float x_center = det[0];
         float y_center = det[1];
         float w = det[2];
         float h = det[3];
         float class_id = det[4];
         float confidence = det[5];
-        
-        // 过滤低置信度检测
+
         if (confidence < prob_threshold)
             continue;
-        
+
         Object obj;
         obj.rect.x = x_center - w * 0.5f;
         obj.rect.y = y_center - h * 0.5f;
@@ -488,17 +355,17 @@ static void process_e2e_seg_output(const ncnn::Mat& pred, float prob_threshold, 
         obj.rect.height = h;
         obj.label = (int)class_id;
         obj.prob = confidence;
-        obj.gindex = i;  // 用于后续获取mask coefficients
-        
+        obj.gindex = i;
+
         objects.push_back(obj);
     }
-    
+
     __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Seg E2E mode: detected %zu objects above threshold %.2f", objects.size(), prob_threshold);
 }
 
 int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
 {
-    const int target_size = det_target_size;//640;
+    const int target_size = det_target_size;
     const float prob_threshold = det_prob_threshold;
     const float nms_threshold = det_nms_threshold;
     const float mask_threshold = 0.5f;
@@ -506,14 +373,12 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
     int img_w = rgb.cols;
     int img_h = rgb.rows;
 
-    // ultralytics/cfg/models/yolo26.yaml
     std::vector<int> strides(3);
     strides[0] = 8;
     strides[1] = 16;
     strides[2] = 32;
     const int max_stride = 32;
 
-    // letterbox pad to multiple of max_stride
     int w = img_w;
     int h = img_h;
     float scale = 1.f;
@@ -532,7 +397,6 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
 
     ncnn::Mat in = ncnn::Mat::from_pixels_resize(rgb.data, ncnn::Mat::PIXEL_RGB, img_w, img_h, w, h);
 
-    // letterbox pad to target_size square
     int wpad = target_size - w;
     int hpad = target_size - h;
     ncnn::Mat in_pad;
@@ -548,11 +412,8 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
     ncnn::Mat out;
     ex.extract("out0", out);
 
-    // 打印输出维度用于调试
     __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Seg Output shape: w=%d h=%d c=%d", out.w, out.h, out.c);
 
-    // 处理转置格式: ncnn模型可能输出 (feature_dim × num_boxes) 即 w=num_boxes, h=feature_dim
-    // 需要转为 (num_boxes × feature_dim) 即 w=feature_dim, h=num_boxes
     if (out.c == 1 && out.w > out.h && out.h > 1) {
         __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Seg: transposing out0 from w=%d h=%d to w=%d h=%d", out.w, out.h, out.h, out.w);
         ncnn::Mat out_t(out.h, out.w);
@@ -567,47 +428,40 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
     }
 
     std::vector<Object> proposals;
-    
-    // E2E模式标志
+
     bool is_e2e_mode = false;
     bool is_yolo26_mode = false;
-    
-    // 根据输出维度自动选择处理方式
-    // YOLO26 E2E seg: w=38 (6+32), 端到端无NMS
-    // YOLO26 (Legacy) seg: w=176 (64+80+32), 使用DFL
-    // YOLO26 seg: w=116 (4+80+32), 无DFL
+
     if (out.w == 38 && out.h <= 300) {
-        // YOLO26 E2E模式分割 (One-to-One Head)
+
         __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Using YOLO26 E2E seg processing (no NMS needed)");
         is_e2e_mode = true;
         process_e2e_seg_output(out, prob_threshold, proposals);
     } else if (out.w == 116) {
-        // YOLO26 One-to-Many模式 (无DFL)
+
         __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Using YOLO26 seg processing (no DFL)");
         is_yolo26_mode = true;
         generate_proposals_yolo26(out, strides, in_pad, prob_threshold, proposals);
     } else {
-        // YOLO26 (Legacy) 模式 (有DFL)
+
         __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Using YOLO26 (Legacy) seg processing (with DFL)");
         generate_proposals(out, strides, in_pad, prob_threshold, proposals);
     }
 
     int count;
     std::vector<int> picked;
-    
+
     if (is_e2e_mode) {
-        // E2E模式无需NMS，直接使用所有检测结果
+
         count = proposals.size();
         picked.resize(count);
         for (int i = 0; i < count; i++) {
             picked[i] = i;
         }
     } else {
-        // 传统模式需要排序和NMS
-        // sort all proposals by score from highest to lowest
+
         qsort_descent_inplace(proposals);
 
-        // apply nms with nms_threshold
         nms_sorted_bboxes(proposals, picked, nms_threshold);
         count = picked.size();
     }
@@ -618,9 +472,7 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
     ncnn::Mat mask_protos;
 
     if (is_e2e_mode) {
-        // E2E模式: out0 = [cx,cy,w,h,class_id,conf,mask_coeffs(32)]  (300x38)
-        //          out1 = mask prototypes (32 x 160 x 160)
-        // mask coefficients 已嵌入 out0 的第6~37列, 无需单独的 mask_feat blob
+
         ex.extract("out1", mask_protos);
 
         if (mask_protos.empty()) {
@@ -629,7 +481,7 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
         }
         __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Seg E2E mask_protos: w=%d h=%d c=%d", mask_protos.w, mask_protos.h, mask_protos.c);
     } else if (is_yolo26_mode) {
-        // YOLO26 非E2E模式: mask系数在out0最后32列, mask原型在out1
+
         ex.extract("out1", mask_protos);
         if (mask_protos.empty()) {
             __android_log_print(ANDROID_LOG_ERROR, "ncnn", "Seg YOLO26: failed to extract out1 (mask_protos)!");
@@ -637,7 +489,7 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
         }
         __android_log_print(ANDROID_LOG_DEBUG, "ncnn", "Seg YOLO26 mask_protos: w=%d h=%d c=%d", mask_protos.w, mask_protos.h, mask_protos.c);
     } else {
-        // YOLO26 (Legacy) 非E2E模式: out1 = per-box mask features, out2 = mask prototypes
+
         ex.extract("out1", mask_feat);
         ex.extract("out2", mask_protos);
 
@@ -647,7 +499,6 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
         }
     }
 
-    // E2E或YOLO26模式下 mask_coeffs 宽度固定32; YOLO26 Legacy模式下取 mask_feat.w
     const int mask_coeff_width = (is_e2e_mode || is_yolo26_mode) ? 32 : mask_feat.w;
     ncnn::Mat objects_mask_feat(mask_coeff_width, 1, count);
 
@@ -656,13 +507,11 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
     {
         objects[i] = proposals[picked[i]];
 
-        // adjust offset to original unpadded
         float x0 = (objects[i].rect.x - (wpad / 2)) / scale;
         float y0 = (objects[i].rect.y - (hpad / 2)) / scale;
         float x1 = (objects[i].rect.x + objects[i].rect.width - (wpad / 2)) / scale;
         float y1 = (objects[i].rect.y + objects[i].rect.height - (hpad / 2)) / scale;
 
-        // clip
         x0 = (std::max)((std::min)(x0, (float)(img_w - 1)), 0.f);
         y0 = (std::max)((std::min)(y0, (float)(img_h - 1)), 0.f);
         x1 = (std::max)((std::min)(x1, (float)(img_w - 1)), 0.f);
@@ -674,31 +523,30 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
         objects[i].rect.height = y1 - y0;
 
         if (is_e2e_mode) {
-            // E2E: 从 out0 的第6列开始取32个 mask coefficients
+
             const float* det = out.row(objects[i].gindex);
             memcpy(objects_mask_feat.channel(i), det + 6, mask_coeff_width * sizeof(float));
         } else if (is_yolo26_mode) {
-            // YOLO26: mask系数在out0每行的最后32个值 (4 bbox + num_class + 32 mask)
+
             const float* box_row = out.row(objects[i].gindex);
             memcpy(objects_mask_feat.channel(i), box_row + (out.w - 32), mask_coeff_width * sizeof(float));
         } else {
-            // YOLO26 Legacy: 从 mask_feat blob 取
+
             memcpy(objects_mask_feat.channel(i), mask_feat.row(objects[i].gindex), mask_coeff_width * sizeof(float));
         }
     }
 
-    // process mask
     ncnn::Mat objects_mask;
     {
         ncnn::Layer* gemm = ncnn::create_layer("Gemm");
 
         ncnn::ParamDict pd;
-        pd.set(6, 1); // constantC
-        pd.set(7, count); // constantM
-        pd.set(8, mask_protos.w * mask_protos.h); // constantN
-        pd.set(9, mask_coeff_width); // constantK
-        pd.set(10, -1); // constant_broadcast_type_C
-        pd.set(11, 1); // output_N1M
+        pd.set(6, 1);
+        pd.set(7, count);
+        pd.set(8, mask_protos.w * mask_protos.h);
+        pd.set(9, mask_coeff_width);
+        pd.set(10, -1);
+        pd.set(11, 1);
         gemm->load_param(pd);
 
         ncnn::Option opt;
@@ -734,19 +582,16 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
         delete sigmoid;
     }
 
-    // resize mask map
     {
         ncnn::Mat objects_mask_resized;
         ncnn::resize_bilinear(objects_mask, objects_mask_resized, in_pad.w / scale, in_pad.h / scale);
         objects_mask = objects_mask_resized;
     }
 
-    // create per-object mask
     for (int i = 0; i < count; i++)
     {
         Object& obj = objects[i];
 
-        // skip zero-size objects
         if ((int)obj.rect.width <= 0 || (int)obj.rect.height <= 0)
             continue;
 
@@ -754,12 +599,11 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
 
         obj.mask = cv::Mat((int)obj.rect.height, (int)obj.rect.width, CV_8UC1);
 
-        // adjust offset to original unpadded and clip inside object box
         for (int y = 0; y < (int)obj.rect.height; y++)
         {
             int src_y = (int)(hpad / 2 / scale + obj.rect.y + y);
             int src_x = (int)(wpad / 2 / scale + obj.rect.x);
-            // bounds check
+
             if (src_y < 0 || src_y >= objects_mask.h || src_x < 0)
                 continue;
             const float* pmm = mm.row(src_y) + src_x;
@@ -774,7 +618,6 @@ int YOLO26_seg::detect(const cv::Mat& rgb, std::vector<Object>& objects)
         }
     }
 
-    // sort objects by area
     struct
     {
         bool operator()(const Object& a, const Object& b) const
@@ -828,9 +671,6 @@ int YOLO26_seg::draw(cv::Mat& rgb, const std::vector<Object>& objects)
         const Object& obj = objects[i];
 
         const cv::Scalar& color = colors[i % 19];
-
-        // fprintf(stderr, "%d = %.5f at %.2f %.2f %.2f x %.2f\n", obj.label, obj.prob,
-                // obj.rect.x, obj.rect.y, obj.rect.width, obj.rect.height);
 
         if (!obj.mask.empty())
         {
