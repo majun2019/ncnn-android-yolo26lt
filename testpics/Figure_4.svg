@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="180mm" height="220mm" viewBox="0 0 1800 2200" role="img" aria-labelledby="title desc">
+  <title id="title">Figure 4. Fault Diagnosis Workflow for Deployment on Resource-Constrained Android Devices</title>
+  <desc id="desc">A five-stage diagnosis workflow from anomaly logging to regression validation, with cross-backend comparison as the main decision gate and structure tracing as an optional deeper inspection stage.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f9fbfd"/>
+      <stop offset="100%" stop-color="#eef4f7"/>
+    </linearGradient>
+    <linearGradient id="observeStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#edf5ff"/>
+      <stop offset="100%" stop-color="#dceafa"/>
+    </linearGradient>
+    <linearGradient id="compareStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ebf8f0"/>
+      <stop offset="100%" stop-color="#daf0e2"/>
+    </linearGradient>
+    <linearGradient id="traceStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff6e4"/>
+      <stop offset="100%" stop-color="#ffe8bd"/>
+    </linearGradient>
+    <linearGradient id="validateStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f2f7fb"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="9" stdDeviation="9" flood-color="#23303a" flood-opacity="0.14"/>
+    </filter>
+    <marker id="arrow" markerWidth="22" markerHeight="22" refX="18" refY="11" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2,2 L20,11 L2,20 Z" fill="#315b7d"/>
+    </marker>
+    <style><![CDATA[
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 43px; font-weight: 700; fill: #17212b; }
+      .subtitle { font-family: Arial, Helvetica, sans-serif; font-size: 25px; fill: #536170; }
+      .lane { font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 1px; fill: #667687; }
+      .stage-title { font-family: Arial, Helvetica, sans-serif; font-size: 30px; font-weight: 700; fill: #182430; }
+      .body { font-family: Arial, Helvetica, sans-serif; font-size: 23px; fill: #314151; }
+      .note { font-family: Arial, Helvetica, sans-serif; font-size: 21px; fill: #526273; }
+      .num { font-family: Arial, Helvetica, sans-serif; font-size: 28px; font-weight: 700; fill: #ffffff; }
+      .callout-title { font-family: Arial, Helvetica, sans-serif; font-size: 24px; font-weight: 700; fill: #73501b; }
+      .callout-text { font-family: Arial, Helvetica, sans-serif; font-size: 20px; fill: #5f6d78; }
+    ]]></style>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="2200" fill="url(#background)"/>
+
+  <rect x="100" y="78" width="1600" height="152" rx="18" fill="#ffffff" stroke="#d7e0ea" stroke-width="3"/>
+  <text x="900" y="138" text-anchor="middle" class="title">Fault Diagnosis Workflow for Android Deployment</text>
+  <text x="900" y="184" text-anchor="middle" class="subtitle">Five decision stages from observable symptoms to verified repair</text>
+
+  <text x="160" y="374" text-anchor="middle" class="lane">
+    <tspan x="160" dy="0">OBSERVE</tspan>
+    <tspan x="160" dy="28">SYMPTOM</tspan>
+  </text>
+  <text x="160" y="704" text-anchor="middle" class="lane">
+    <tspan x="160" dy="0">LOCALIZE</tspan>
+    <tspan x="160" dy="28">TENSOR</tspan>
+  </text>
+  <text x="160" y="1034" text-anchor="middle" class="lane">
+    <tspan x="160" dy="0">COMPARE</tspan>
+    <tspan x="160" dy="28">BACKENDS</tspan>
+  </text>
+  <text x="160" y="1364" text-anchor="middle" class="lane">
+    <tspan x="160" dy="0">TRACE</tspan>
+    <tspan x="160" dy="28">STRUCTURE</tspan>
+  </text>
+  <text x="160" y="1694" text-anchor="middle" class="lane">
+    <tspan x="160" dy="0">VALIDATE</tspan>
+    <tspan x="160" dy="28">REGRESSION</tspan>
+  </text>
+
+  <g filter="url(#shadow)">
+    <rect x="270" y="300" width="1040" height="210" rx="20" fill="url(#observeStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="338" cy="405" r="38" fill="#315b7d"/>
+    <text x="338" y="415" text-anchor="middle" class="num">S1</text>
+    <text x="412" y="373" class="stage-title">Anomaly Logging</text>
+    <text x="412" y="416" class="body">Score explosion / fixed 0.5 / missing geometry / label disorder</text>
+    <text x="412" y="453" class="note">Exit: the phenomenon is reproducible and numerically described</text>
+  </g>
+
+  <path d="M790 524 L790 588" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <g filter="url(#shadow)">
+    <rect x="270" y="630" width="1040" height="210" rx="20" fill="url(#observeStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="338" cy="735" r="38" fill="#315b7d"/>
+    <text x="338" y="745" text-anchor="middle" class="num">S2</text>
+    <text x="412" y="703" class="stage-title">Intermediate-Output Inspection</text>
+    <text x="412" y="746" class="body">Inspect tensor shapes, layer outputs, and value ranges</text>
+    <text x="412" y="783" class="note">Exit: the deviation is localized to a dimension or numerical range</text>
+  </g>
+
+  <path d="M790 854 L790 918" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <g filter="url(#shadow)">
+    <rect x="270" y="960" width="1040" height="210" rx="20" fill="url(#compareStage)" stroke="#79ad83" stroke-width="3"/>
+    <circle cx="338" cy="1065" r="38" fill="#377b45"/>
+    <text x="338" y="1075" text-anchor="middle" class="num">S3</text>
+    <text x="412" y="1033" class="stage-title">Cross-Backend Comparison</text>
+    <text x="412" y="1076" class="body">PyTorch vs. Python-NCNN vs. Android-NCNN under the same input</text>
+    <text x="412" y="1113" class="note">Decision: distinguish export-side faults from device-side faults</text>
+  </g>
+
+  <path d="M790 1184 L790 1248" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <g filter="url(#shadow)">
+    <rect x="270" y="1290" width="1040" height="210" rx="20" fill="url(#traceStage)" stroke="#d4a047" stroke-width="3"/>
+    <circle cx="338" cy="1395" r="38" fill="#a66b15"/>
+    <text x="338" y="1405" text-anchor="middle" class="num">S4</text>
+    <text x="412" y="1363" class="stage-title">Structure Tracing</text>
+    <text x="412" y="1406" class="body">Trace param concat chains, parser columns, and activation semantics</text>
+    <text x="412" y="1443" class="note">Used when value patterns alone cannot explain the fault</text>
+  </g>
+
+  <path d="M790 1514 L790 1578" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <g filter="url(#shadow)">
+    <rect x="270" y="1620" width="1040" height="210" rx="20" fill="url(#validateStage)" stroke="#8ca4b8" stroke-width="3"/>
+    <circle cx="338" cy="1725" r="38" fill="#315b7d"/>
+    <text x="338" y="1735" text-anchor="middle" class="num">S5</text>
+    <text x="412" y="1693" class="stage-title">Regression Validation</text>
+    <text x="412" y="1736" class="body">Re-run repaired scenes and previously passing cases</text>
+    <text x="412" y="1773" class="note">Exit: the repair restores expected behavior without new degradation</text>
+  </g>
+
+  <g>
+    <rect x="1380" y="620" width="320" height="500" rx="18" fill="#fff8eb" stroke="#d4a047" stroke-width="3"/>
+    <text x="1540" y="672" text-anchor="middle" class="callout-title">decision gates</text>
+    <text x="1424" y="730" class="callout-text">S3 is the front-end filter</text>
+    <text x="1424" y="764" class="callout-text">for export-vs-device</text>
+    <text x="1424" y="798" class="callout-text">localization.</text>
+    <line x1="1424" y1="840" x2="1656" y2="840" stroke="#d9b167" stroke-width="2"/>
+    <text x="1424" y="894" class="callout-text">S4 is activated only</text>
+    <text x="1424" y="928" class="callout-text">when parser or graph</text>
+    <text x="1424" y="962" class="callout-text">structure must be traced.</text>
+    <line x1="1424" y1="1004" x2="1656" y2="1004" stroke="#d9b167" stroke-width="2"/>
+    <text x="1424" y="1058" class="callout-text">S5 remains mandatory</text>
+    <text x="1424" y="1092" class="callout-text">after every repair.</text>
+  </g>
+
+  <rect x="270" y="1982" width="1040" height="2" fill="#c8d6e2"/>
+  <text x="270" y="2025" class="callout-text">Workflow output: observable symptom, localized cause, applied repair, and verified non-regression.</text>
+</svg>

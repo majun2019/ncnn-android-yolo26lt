@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
@@ -14,7 +13,6 @@ import cv2
 import ncnn
 import numpy as np
 from ultralytics import YOLO
-
 
 @dataclass
 class NcnnStats:
@@ -32,17 +30,14 @@ class NcnnStats:
     frac_gt_090: float
     frac_gt_099: float
 
-
 def run(cmd: list[str], cwd: Path | None = None) -> None:
     subprocess.run(cmd, check=True, cwd=str(cwd) if cwd else None)
-
 
 def pick_images(images_dir: Path, limit: int) -> List[Path]:
     exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
     imgs = [p for p in images_dir.rglob("*") if p.suffix.lower() in exts]
     imgs.sort()
     return imgs[:limit]
-
 
 def letterbox_bgr(im: np.ndarray, target: int = 640, stride: int = 32) -> np.ndarray:
     h0, w0 = im.shape[:2]
@@ -55,7 +50,6 @@ def letterbox_bgr(im: np.ndarray, target: int = 640, stride: int = 32) -> np.nda
     top, bottom = hpad // 2, hpad - hpad // 2
     left, right = wpad // 2, wpad - wpad // 2
     return cv2.copyMakeBorder(im_r, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114))
-
 
 def ncnn_extract_out(model_dir: Path, image_path: Path) -> ncnn.Mat:
     net = ncnn.Net()
@@ -79,7 +73,6 @@ def ncnn_extract_out(model_dir: Path, image_path: Path) -> ncnn.Mat:
         raise RuntimeError("extract out0 failed")
     return out
 
-
 def max_class_probs(out: ncnn.Mat) -> tuple[np.ndarray, int]:
     w, h = int(out.w), int(out.h)
     feature_dim = min(w, h)
@@ -89,7 +82,6 @@ def max_class_probs(out: ncnn.Mat) -> tuple[np.ndarray, int]:
 
     probs = []
     if w >= h:
-        # shape likely (w=num_boxes, h=4+nc), rows are features
         num_boxes = w
         for i in range(num_boxes):
             cls_max = -1e9
@@ -99,7 +91,6 @@ def max_class_probs(out: ncnn.Mat) -> tuple[np.ndarray, int]:
                     cls_max = s
             probs.append(cls_max)
     else:
-        # shape likely (w=4+nc, h=num_boxes), rows are boxes
         num_boxes = h
         for i in range(num_boxes):
             row = out.row(i)
@@ -107,7 +98,6 @@ def max_class_probs(out: ncnn.Mat) -> tuple[np.ndarray, int]:
             probs.append(max(cls) if cls else 0.0)
 
     return np.array(probs, dtype=np.float32), nc
-
 
 def eval_ncnn(name: str, model_dir: Path, images: List[Path]) -> NcnnStats:
     try:
@@ -149,7 +139,6 @@ def eval_ncnn(name: str, model_dir: Path, images: List[Path]) -> NcnnStats:
     except Exception as e:
         return NcnnStats(name, str(model_dir), False, str(e), len(images), -1, -1, -1, 0, 0, 0, 0, 0)
 
-
 def export_ultra_ncnn(pt: Path, out_dir: Path, imgsz: int, half: bool) -> Path:
     model = YOLO(str(pt))
     model.export(format="ncnn", imgsz=imgsz, half=half, end2end=False)
@@ -162,7 +151,6 @@ def export_ultra_ncnn(pt: Path, out_dir: Path, imgsz: int, half: bool) -> Path:
     shutil.copy2(src / "model.ncnn.param", out_dir / "model.ncnn.param")
     shutil.copy2(src / "model.ncnn.bin", out_dir / "model.ncnn.bin")
     return out_dir
-
 
 def export_pnnx_ts(pt: Path, out_dir: Path, imgsz: int, fp16: bool, pnnx_exe: Path) -> Path:
     model = YOLO(str(pt))
@@ -177,7 +165,6 @@ def export_pnnx_ts(pt: Path, out_dir: Path, imgsz: int, fp16: bool, pnnx_exe: Pa
         f"fp16={1 if fp16 else 0}",
     ])
     return out_dir
-
 
 def export_onnx2ncnn(pt: Path, out_dir: Path, imgsz: int, onnx2ncnn_exe: Path, ncnnoptimize_exe: Path, fp16_opt: bool) -> Path:
     model = YOLO(str(pt))
@@ -199,7 +186,6 @@ def export_onnx2ncnn(pt: Path, out_dir: Path, imgsz: int, onnx2ncnn_exe: Path, n
         f"1,3,{imgsz},{imgsz}",
     ])
     return out_dir
-
 
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -223,19 +209,15 @@ def main() -> None:
 
     results: list[NcnnStats] = []
 
-    # ultra fp32
     m1 = export_ultra_ncnn(pt, workdir / "ultra_fp32", imgsz=args.imgsz, half=False)
     results.append(eval_ncnn("ultra_fp32", m1, imgs))
 
-    # ultra fp16
     m2 = export_ultra_ncnn(pt, workdir / "ultra_fp16", imgsz=args.imgsz, half=True)
     results.append(eval_ncnn("ultra_fp16", m2, imgs))
 
     if args.pnnx_exe:
-        # pnnx fp32
         m3 = export_pnnx_ts(pt, workdir / "pnnx_fp32", args.imgsz, fp16=False, pnnx_exe=Path(args.pnnx_exe))
         results.append(eval_ncnn("pnnx_fp32", m3, imgs))
-        # pnnx fp16
         m4 = export_pnnx_ts(pt, workdir / "pnnx_fp16", args.imgsz, fp16=True, pnnx_exe=Path(args.pnnx_exe))
         results.append(eval_ncnn("pnnx_fp16", m4, imgs))
 
@@ -271,7 +253,6 @@ def main() -> None:
     out = workdir / "conversion_detail_stats.json"
     out.write_text(json.dumps([asdict(x) for x in results], ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"saved: {out}")
-
 
 if __name__ == "__main__":
     main()

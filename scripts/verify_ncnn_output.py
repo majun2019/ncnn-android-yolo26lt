@@ -1,18 +1,9 @@
-#!/usr/bin/env python3
-"""
-YOLO26 NCNN输出格式验证工具
-
-用于验证导出的NCNN模型输出格式是否符合预期。
-
-"""
-
 import os
 import sys
 import argparse
 from pathlib import Path
 
 def parse_ncnn_param(param_path: str):
-    """解析NCNN param文件，提取输出层信息"""
     print(f"\n解析文件: {param_path}")
     
     if not os.path.exists(param_path):
@@ -25,18 +16,15 @@ def parse_ncnn_param(param_path: str):
     with open(param_path, 'r') as f:
         lines = f.readlines()
     
-    # 跳过magic number
     if lines[0].strip() == '7767517':
         lines = lines[1:]
     
-    # 第一行是 layer_count blob_count
     header = lines[0].strip().split()
     layer_count = int(header[0])
     blob_count = int(header[1])
     
     print(f"  层数: {layer_count}, Blob数: {blob_count}")
     
-    # 解析每一层
     for line in lines[1:]:
         parts = line.strip().split()
         if len(parts) >= 4:
@@ -52,15 +40,12 @@ def parse_ncnn_param(param_path: str):
                 'outputs': output_count
             })
             
-            # 查找输出层（通常以out开头或是最后几层）
             if layer_name.startswith('out') or 'output' in layer_name.lower():
                 output_layers.append(layer_name)
     
-    # 找到输入层
     input_layers = [l for l in layers if l['type'] == 'Input']
     print(f"  输入层: {[l['name'] for l in input_layers]}")
     
-    # 找到Permute层（通常在输出前）
     permute_layers = [l for l in layers if l['type'] == 'Permute']
     
     return {
@@ -73,12 +58,9 @@ def parse_ncnn_param(param_path: str):
     }
 
 def detect_model_type(param_info: dict) -> str:
-    """根据网络结构检测模型类型"""
     layer_types = [l['type'] for l in param_info['layers']]
     
-    # E2E模型通常有特定的后处理层
     if 'Concat' in layer_types and param_info['layer_count'] > 200:
-        # 检查是否有NMS相关层
         layer_names = [l['name'] for l in param_info['layers']]
         has_nms = any('nms' in name.lower() or 'topk' in name.lower() for name in layer_names)
         
@@ -90,7 +72,6 @@ def detect_model_type(param_info: dict) -> str:
     return "Unknown"
 
 def verify_e2e_output_format(param_path: str):
-    """验证E2E输出格式"""
     print("\n" + "="*60)
     print("NCNN模型输出格式验证")
     print("="*60)
@@ -102,7 +83,6 @@ def verify_e2e_output_format(param_path: str):
     model_type = detect_model_type(param_info)
     print(f"\n检测到模型类型: {model_type}")
     
-    # 显示最后几层
     print(f"\n最后10层:")
     for layer in param_info['layers'][-10:]:
         print(f"  {layer['type']:20s} {layer['name']}")
@@ -110,7 +90,6 @@ def verify_e2e_output_format(param_path: str):
     return True
 
 def compare_models(many_param: str, e2e_param: str):
-    """对比两种模型"""
     print("\n" + "="*60)
     print("模型对比")
     print("="*60)
@@ -123,7 +102,6 @@ def compare_models(many_param: str, e2e_param: str):
         print(f"  One-to-Many 层数: {many_info['layer_count']}")
         print(f"  E2E 层数: {e2e_info['layer_count']}")
         
-        # 统计各类型层数
         many_types = {}
         e2e_types = {}
         
@@ -132,7 +110,6 @@ def compare_models(many_param: str, e2e_param: str):
         for l in e2e_info['layers']:
             e2e_types[l['type']] = e2e_types.get(l['type'], 0) + 1
         
-        # 找出差异
         all_types = set(many_types.keys()) | set(e2e_types.keys())
         print(f"\n层类型统计差异:")
         for t in sorted(all_types):
@@ -142,12 +119,10 @@ def compare_models(many_param: str, e2e_param: str):
                 print(f"  {t}: {many_count} -> {e2e_count}")
 
 def check_assets_directory():
-    """检查assets目录中的模型"""
     print("\n" + "="*60)
     print("检查Assets目录")
     print("="*60)
     
-    # 获取脚本所在目录的父目录（项目根目录）
     script_dir = Path(__file__).parent.resolve()
     project_root = script_dir.parent
     assets_dir = project_root / "app" / "src" / "main" / "assets"
@@ -177,45 +152,18 @@ def check_assets_directory():
             bin_size = 0
             status = "⚠ (缺少bin文件)"
         
-        # 检测是否是E2E模型
         is_e2e = "_e2e" in param_file.name
         mode = "E2E" if is_e2e else "Normal"
         
         print(f"  {status} {param_file.name} ({param_size:.1f}KB) [{mode}]")
 
 def generate_expected_output_info():
-    """生成预期输出格式说明"""
     print("\n" + "="*60)
     print("预期输出格式参考")
     print("="*60)
     
     print("""
-┌────────────────┬─────────────────┬─────────────────┬─────────────────┐
-│ 任务           │ YOLO26 Legacy   │ YOLO26 Many     │ YOLO26 E2E      │
-├────────────────┼─────────────────┼─────────────────┼─────────────────┤
-│ Detection      │ (8400, 144)     │ (8400, 84)      │ (300, 6)        │
-│ Segmentation   │ (8400, 176)     │ (8400, 116)     │ (300, 38)       │
-│ Pose           │ (8400, 65)      │ (8400, 5)       │ (300, 57)       │
-│ OBB            │ (8400, 79)      │ (8400, 19)      │ (300, 7)        │
-└────────────────┴─────────────────┴─────────────────┴─────────────────┘
-
-E2E模式输出详解:
-  Detection (300, 6):
-    [x_center, y_center, width, height, class_id, confidence]
-  
-  Segmentation (300, 38):
-    [x, y, w, h, class_id, conf, mask_coeffs(32)]
-  
-  Pose (300, 57):
-    [x, y, w, h, class_id, conf, keypoints(17*3)]
-  
-  OBB (300, 7):
-    [x_center, y_center, width, height, angle, class_id, confidence]
-
-C++自动检测逻辑:
-  if (out.w == 6 && out.h <= 300)  -> E2E Detection
-  if (out.w == 84)                  -> YOLO26 One-to-Many
-    if (out.w == 144)                 -> YOLO26 Legacy
+对于One-to-One模型，输出层通常为一个包含所有检测结果的Blob，格式为 [num_boxes, 4 + num_classes]，其中每行包含 [x1, y1, x2, y2, class_scores...]。
 """)
 
 def main():

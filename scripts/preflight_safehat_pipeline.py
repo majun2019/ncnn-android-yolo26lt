@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-
 from __future__ import annotations
 
 import argparse
@@ -15,7 +12,6 @@ from typing import Iterable, List, Optional, Tuple
 import numpy as np
 import yaml
 
-
 @dataclass
 class LabelScanResult:
     total_files: int
@@ -24,14 +20,12 @@ class LabelScanResult:
     out_of_range_labels: int
     class_hist: List[int]
 
-
 def load_data_yaml(yaml_path: Path) -> dict:
     with yaml_path.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     if not isinstance(cfg, dict):
         raise ValueError(f"Invalid yaml: {yaml_path}")
     return cfg
-
 
 def resolve_dataset_paths(cfg: dict, yaml_path: Path) -> Tuple[Path, Path, Path, Path, int, List[str]]:
     base = (yaml_path.parent / cfg.get("path", "")).resolve()
@@ -53,19 +47,15 @@ def resolve_dataset_paths(cfg: dict, yaml_path: Path) -> Tuple[Path, Path, Path,
         names,
     )
 
-
 def labels_dir_from_images_dir(images_dir: Path) -> Path:
-    # YOLO 常规结构: xxx/images -> xxx/labels
     if images_dir.name == "images":
         return images_dir.parent / "labels"
     return images_dir.parent / "labels"
-
 
 def iter_label_files(*label_dirs: Path) -> Iterable[Path]:
     for d in label_dirs:
         if d.exists():
             yield from d.rglob("*.txt")
-
 
 def scan_labels(nc: int, *label_dirs: Path) -> LabelScanResult:
     class_hist = [0 for _ in range(max(nc, 1))]
@@ -111,9 +101,8 @@ def scan_labels(nc: int, *label_dirs: Path) -> LabelScanResult:
         class_hist=class_hist,
     )
 
-
 def detect_ncnn_output_shape(param_path: Path, bin_path: Path, input_size: int = 640) -> Tuple[int, int, int]:
-    import ncnn  # 延迟导入，避免无依赖时启动失败
+    import ncnn
 
     net = ncnn.Net()
     ret = net.load_param(str(param_path))
@@ -143,19 +132,15 @@ def detect_ncnn_output_shape(param_path: Path, bin_path: Path, input_size: int =
 
     return int(out.w), int(out.h), int(out.c)
 
-
 def infer_head_type_and_classes(w: int, h: int) -> Tuple[str, Optional[int]]:
-    # E2E detection 常见 (300,6)
     if w == 6 or h == 6:
         return "E2E", None
 
-    # O2M detection 常见 (8400, nc+4) 或转置
     a, b = max(w, h), min(w, h)
     if a == 8400 and b > 4:
         return "O2M", b - 4
 
     return "Unknown", None
-
 
 def pick_sample_images(val_images: Path, limit: int = 12) -> List[Path]:
     exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
@@ -163,14 +148,11 @@ def pick_sample_images(val_images: Path, limit: int = 12) -> List[Path]:
     imgs.sort()
     return imgs[:limit]
 
-
 def build_ultralytics_ncnn_temp_model(param_path: Path, bin_path: Path) -> Path:
-    # Ultralytics 对 NCNN 目录识别依赖 *_ncnn_model 命名约定
     td = Path(tempfile.mkdtemp(prefix="ncnn_ultra_", suffix="_ncnn_model"))
     shutil.copy2(param_path, td / "model.ncnn.param")
     shutil.copy2(bin_path, td / "model.ncnn.bin")
     return td
-
 
 def resolve_assets_model_prefix(root: Path, prefix_text: str) -> Path:
     prefix = (root / prefix_text).resolve()
@@ -193,7 +175,6 @@ def resolve_assets_model_prefix(root: Path, prefix_text: str) -> Path:
 
     return prefix
 
-
 def compare_pt_vs_ncnn(
     pt_model: Path,
     ncnn_param: Path,
@@ -210,14 +191,12 @@ def compare_pt_vs_ncnn(
     temp_ncnn = build_ultralytics_ncnn_temp_model(ncnn_param, ncnn_bin)
     try:
         pt = YOLO(str(pt_model))
-        # 某些 ultralytics 版本对 NCNN 目录识别不稳定，按顺序尝试多种入口
         try:
             ncnn_model = YOLO(str(temp_ncnn), task="detect")
         except Exception:
             try:
                 ncnn_model = YOLO(str(temp_ncnn / "model.ncnn.param"), task="detect")
             except Exception:
-                # 再试一次带目录斜杠形式
                 ncnn_model = YOLO(str(temp_ncnn).rstrip("/\\") + "/", task="detect")
 
         pt_counts, ncnn_counts = [], []
@@ -256,7 +235,6 @@ def compare_pt_vs_ncnn(
         print("[COMPARE][TIP] 不影响前面的核心结论（类别数/输出形状）。")
     finally:
         shutil.rmtree(temp_ncnn, ignore_errors=True)
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="SafeHat 训练/导出预检")
@@ -349,7 +327,6 @@ def main() -> None:
     print("\n" + "=" * 72)
     print("预检完成")
     print("=" * 72)
-
 
 if __name__ == "__main__":
     main()

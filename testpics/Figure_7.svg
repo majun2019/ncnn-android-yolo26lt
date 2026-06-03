@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="180mm" height="178mm" viewBox="0 0 1800 1780" role="img" aria-labelledby="title desc">
+  <title id="title">Figure 7. Semantic Comparison of Legacy Grid Decoding and E2E Pre-Decoded Coordinates</title>
+  <desc id="desc">A comparison between legacy grid-relative outputs that require stride restoration and E2E outputs that are already absolute pixel coordinates, including the wrong repeated-decoding path that pushes geometry beyond image range.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f9fbfd"/>
+      <stop offset="100%" stop-color="#eef4f7"/>
+    </linearGradient>
+    <linearGradient id="legacyStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#edf5ff"/>
+      <stop offset="100%" stop-color="#dceafa"/>
+    </linearGradient>
+    <linearGradient id="correctStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ebf8f0"/>
+      <stop offset="100%" stop-color="#daf0e2"/>
+    </linearGradient>
+    <linearGradient id="wrongStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff6e4"/>
+      <stop offset="100%" stop-color="#ffe2be"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="9" stdDeviation="9" flood-color="#23303a" flood-opacity="0.14"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="22" markerHeight="22" refX="18" refY="11" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2,2 L20,11 L2,20 Z" fill="#315b7d"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="22" markerHeight="22" refX="18" refY="11" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2,2 L20,11 L2,20 Z" fill="#377b45"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="22" markerHeight="22" refX="18" refY="11" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2,2 L20,11 L2,20 Z" fill="#a66b15"/>
+    </marker>
+    <style><![CDATA[
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 39px; font-weight: 700; fill: #17212b; }
+      .subtitle { font-family: Arial, Helvetica, sans-serif; font-size: 25px; fill: #536170; }
+      .column-title { font-family: Arial, Helvetica, sans-serif; font-size: 30px; font-weight: 700; fill: #182430; }
+      .stage-title { font-family: Arial, Helvetica, sans-serif; font-size: 27px; font-weight: 700; fill: #182430; }
+      .body { font-family: Arial, Helvetica, sans-serif; font-size: 22px; fill: #314151; }
+      .note { font-family: Arial, Helvetica, sans-serif; font-size: 20px; fill: #526273; }
+      .good { font-family: Arial, Helvetica, sans-serif; font-size: 23px; font-weight: 700; fill: #2f6f3e; }
+      .bad { font-family: Arial, Helvetica, sans-serif; font-size: 23px; font-weight: 700; fill: #8a4c14; }
+      .num { font-family: Arial, Helvetica, sans-serif; font-size: 27px; font-weight: 700; fill: #ffffff; }
+    ]]></style>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="1780" fill="url(#background)"/>
+  <rect x="100" y="78" width="1600" height="152" rx="18" fill="#ffffff" stroke="#d7e0ea" stroke-width="3"/>
+  <text x="900" y="138" text-anchor="middle" class="title">Legacy Grid Decoding vs. E2E Pre-Decoded Coordinates</text>
+  <text x="900" y="184" text-anchor="middle" class="subtitle">The parser must respect whether coordinates are grid-relative or already absolute</text>
+
+  <g filter="url(#shadow)">
+    <rect x="120" y="300" width="760" height="1220" rx="20" fill="#ffffff" stroke="#b9cde2" stroke-width="3"/>
+    <text x="500" y="360" text-anchor="middle" class="column-title">Traditional One-to-Many / Legacy</text>
+    <text x="500" y="398" text-anchor="middle" class="note">grid-relative values must be decoded by the parser</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="920" y="300" width="760" height="1220" rx="20" fill="#ffffff" stroke="#b8d2bd" stroke-width="3"/>
+    <text x="1300" y="360" text-anchor="middle" class="column-title">E2E Output</text>
+    <text x="1300" y="398" text-anchor="middle" class="note">coordinates are already decoded during export</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="230" y="500" width="540" height="140" rx="18" fill="url(#legacyStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="285" cy="570" r="31" fill="#315b7d"/>
+    <text x="285" y="579" text-anchor="middle" class="num">1</text>
+    <text x="345" y="548" class="stage-title">Network output</text>
+    <text x="345" y="586" class="body">grid-relative / stride-relative values</text>
+  </g>
+  <path d="M500 654 L500 724" stroke="#315b7d" stroke-width="6" fill="none" marker-end="url(#arrowBlue)" stroke-linecap="round"/>
+  <g filter="url(#shadow)">
+    <rect x="230" y="760" width="540" height="158" rx="18" fill="url(#legacyStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="285" cy="839" r="31" fill="#315b7d"/>
+    <text x="285" y="848" text-anchor="middle" class="num">2</text>
+    <text x="345" y="813" class="stage-title">Parser action</text>
+    <text x="345" y="851" class="body">multiply by stride</text>
+    <text x="345" y="886" class="note">restore coordinates from grid cells</text>
+  </g>
+  <path d="M500 932 L500 1002" stroke="#315b7d" stroke-width="6" fill="none" marker-end="url(#arrowBlue)" stroke-linecap="round"/>
+  <g filter="url(#shadow)">
+    <rect x="230" y="1038" width="540" height="158" rx="18" fill="url(#correctStage)" stroke="#79ad83" stroke-width="3"/>
+    <circle cx="285" cy="1117" r="31" fill="#377b45"/>
+    <text x="285" y="1126" text-anchor="middle" class="num">3</text>
+    <text x="345" y="1091" class="stage-title">Correct result</text>
+    <text x="345" y="1129" class="body">pixel coordinates in image space</text>
+    <text x="345" y="1164" class="good">boxes and geometry are valid</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1030" y="500" width="540" height="140" rx="18" fill="url(#legacyStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="1085" cy="570" r="31" fill="#315b7d"/>
+    <text x="1085" y="579" text-anchor="middle" class="num">1</text>
+    <text x="1145" y="548" class="stage-title">Network output</text>
+    <text x="1145" y="586" class="body">already absolute pixel coordinates</text>
+  </g>
+  <path d="M1300 654 L1300 724" stroke="#377b45" stroke-width="6" fill="none" marker-end="url(#arrowGreen)" stroke-linecap="round"/>
+  <g filter="url(#shadow)">
+    <rect x="1030" y="760" width="540" height="190" rx="18" fill="url(#correctStage)" stroke="#79ad83" stroke-width="3"/>
+    <circle cx="1085" cy="834" r="31" fill="#377b45"/>
+    <text x="1085" y="843" text-anchor="middle" class="num">2</text>
+    <text x="1145" y="810" class="stage-title">Correct parser branch</text>
+    <text x="1145" y="848" class="body">use coordinates directly</text>
+    <text x="1145" y="883" class="good">pose and OBB geometry</text>
+    <text x="1145" y="916" class="good">render normally</text>
+  </g>
+  <path d="M1300 966 L1300 1020" stroke="#a66b15" stroke-width="6" fill="none" stroke-dasharray="16 13" marker-end="url(#arrowOrange)" stroke-linecap="round"/>
+  <g filter="url(#shadow)">
+    <rect x="1030" y="1048" width="540" height="245" rx="18" fill="url(#wrongStage)" stroke="#d4a047" stroke-width="3"/>
+    <circle cx="1085" cy="1170" r="31" fill="#a66b15"/>
+    <text x="1085" y="1179" text-anchor="middle" class="num">X</text>
+    <text x="1145" y="1112" class="stage-title">Wrong parser branch</text>
+    <text x="1145" y="1150" class="body">decode again as grid x stride</text>
+    <text x="1145" y="1185" class="bad">coordinates exceed image range</text>
+    <text x="1145" y="1220" class="bad">skeletons and OBB vertices</text>
+    <text x="1145" y="1253" class="bad">disappear</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="260" y="1600" width="1280" height="86" rx="18" fill="#ffffff" stroke="#d7e0ea" stroke-width="3"/>
+    <text x="900" y="1654" text-anchor="middle" class="body">Diagnosis implication: output-path semantics must be checked before any stride-based coordinate restoration is applied.</text>
+  </g>
+</svg>

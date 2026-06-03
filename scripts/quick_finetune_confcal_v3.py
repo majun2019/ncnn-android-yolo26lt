@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-"""
-快速微调模板（confcal_v3）：
-- 以 v2 best.pt 为基线，短程训练吸收 hard negatives；
-- 训练完成后可选导出 NCNN 并覆盖 Android assets。
-
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -14,7 +6,6 @@ from pathlib import Path
 
 import torch
 from ultralytics import YOLO
-
 
 def backup_and_copy(src_param: Path, src_bin: Path, dst_prefix: Path) -> tuple[Path, Path]:
     dst_param = Path(str(dst_prefix) + ".param")
@@ -30,9 +21,7 @@ def backup_and_copy(src_param: Path, src_bin: Path, dst_prefix: Path) -> tuple[P
     shutil.copy2(src_bin, dst_bin)
     return dst_param, dst_bin
 
-
 def resolve_best_checkpoint(root: Path, run_name: str, model: YOLO, train_results) -> Path:
-    # 1) Prefer trainer save_dir if available
     trainer = getattr(model, "trainer", None)
     if trainer is not None:
         sd = getattr(trainer, "save_dir", None)
@@ -41,14 +30,12 @@ def resolve_best_checkpoint(root: Path, run_name: str, model: YOLO, train_result
             if p.exists():
                 return p
 
-    # 2) Some result objects may expose save_dir
     sd2 = getattr(train_results, "save_dir", None)
     if sd2:
         p = (Path(sd2) / "weights" / "best.pt").resolve()
         if p.exists():
             return p
 
-    # 3) Fallback search by run name, choose newest
     candidates = sorted(
         root.glob(f"**/{run_name}/weights/best.pt"),
         key=lambda x: x.stat().st_mtime,
@@ -62,15 +49,12 @@ def resolve_best_checkpoint(root: Path, run_name: str, model: YOLO, train_result
         f"Looked via trainer.save_dir and pattern '**/{run_name}/weights/best.pt'."
     )
 
-
 def resolve_ncnn_export_dir(root: Path, best_pt: Path, export_result) -> Path:
-    # 1) Prefer export() return value
     if export_result is not None:
         p = Path(str(export_result)).resolve()
         if p.is_dir() and (p / "model.ncnn.param").exists() and (p / "model.ncnn.bin").exists():
             return p
 
-    # 2) Common defaults
     common = [
         best_pt.parent / f"{best_pt.stem}_ncnn_model",
         root / f"{best_pt.stem}_ncnn_model",
@@ -79,7 +63,6 @@ def resolve_ncnn_export_dir(root: Path, best_pt: Path, export_result) -> Path:
         if d.exists() and (d / "model.ncnn.param").exists() and (d / "model.ncnn.bin").exists():
             return d.resolve()
 
-    # 3) Fallback: newest *_ncnn_model directory with expected files
     dirs = []
     for d in root.glob("**/*_ncnn_model"):
         if d.is_dir() and (d / "model.ncnn.param").exists() and (d / "model.ncnn.bin").exists():
@@ -89,7 +72,6 @@ def resolve_ncnn_export_dir(root: Path, best_pt: Path, export_result) -> Path:
         return dirs[0].resolve()
 
     raise FileNotFoundError("NCNN export directory not found (expected model.ncnn.param/.bin).")
-
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Quick finetune for confcal v3")
@@ -189,7 +171,6 @@ def main() -> None:
         print(f"assets updated: {dst_bin}")
 
     print("done")
-
 
 if __name__ == "__main__":
     main()

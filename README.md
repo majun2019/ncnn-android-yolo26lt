@@ -8,6 +8,8 @@ This repository accompanies the paper:
 
 The project provides an Android application and supporting scripts for moving YOLO26 assets into an NCNN-based Android runtime, observing silent deployment errors, and validating repairs on real CPU-only Android devices. The main demonstration case is a 10-class SafeHat PPE detector, while the same Android application also exercises segmentation, pose estimation, classification, and oriented bounding-box (OBB) assets.
 
+In this repository, YOLO26 denotes an engineering-managed set of `yolo26n` model assets rather than a new general-purpose model family.
+
 ## What This Repository Provides
 
 - A Java-JNI-C++-NCNN Android application for multi-task YOLO26 inference.
@@ -30,9 +32,9 @@ It uses five stages:
 
 | Stage | Name | Purpose | Representative tools |
 |---|---|---|---|
-| S1 | Anomaly logging | Record abnormal scores, missing geometry, label disorder, or loading errors | `logcat`, `collect_latency.py`, `diagnose_background_scores.py` |
+| S1 | Anomaly logging | Record abnormal scores, missing geometry, label disorder, or loading errors | Android logcat, `diagnose_background_scores.py` |
 | S2 | Intermediate-output inspection | Check output names, tensor shapes, class count, and value ranges | `verify_ncnn_output.py`, `diagnose_model.py` |
-| S3 | Cross-backend comparison | Compare the same input across desktop and Android paths | `trace_conversion_pipeline.py`, `diagnose_model.py` |
+| S3 | Cross-backend comparison | Compare the same input across desktop and Android paths | `diagnose_model.py`, `conversion_matrix_check.py` |
 | S4 | Graph-structure tracing | Trace activations, concat chains, coordinate semantics, and output columns | `conversion_detail_check.py`, parser inspection |
 | S5 | Regression validation | Re-run failing and previously passing frozen scenes after repair | `test_letterbox_hypothesis.py`, `test_yolo26_e2e.py` |
 
@@ -128,13 +130,16 @@ Then extract them into `app/src/main/jni/` and keep the paths in `CMakeLists.txt
 
 The Android application loads NCNN `.param` and `.bin` pairs from `app/src/main/assets/`.
 
-Example Ultralytics export:
+E2E task branches and the SafeHat O2M main case should be exported with different output-path settings and verified before asset replacement:
 
 ```python
 from ultralytics import YOLO
 
-model = YOLO("best.pt")
-model.export(format="ncnn")
+model = YOLO("yolo26n.pt")
+model.export(format="ncnn", imgsz=640, half=False, end2end=True)
+
+safehat = YOLO("best.pt")
+safehat.export(format="ncnn", imgsz=640, half=False, end2end=False)
 ```
 
 Project scripts used by the workflow include:
@@ -144,13 +149,13 @@ Project scripts used by the workflow include:
 | `scripts/yolo_26_train.py` | Training or fine-tuning entry point |
 | `scripts/export_yolo26_ncnn.py` | YOLO26-to-NCNN export helper |
 | `scripts/export_best_safehat_to_assets.py` | SafeHat asset replacement helper |
+| `scripts/diagnose_background_scores.py` | Empty-scene score inspection |
 | `scripts/diagnose_model.py` | Tensor/value inspection |
 | `scripts/verify_ncnn_output.py` | NCNN output check |
-| `scripts/trace_conversion_pipeline.py` | Cross-backend conversion tracing |
+| `scripts/conversion_matrix_check.py` | Conversion consistency matrix check |
 | `scripts/conversion_detail_check.py` | Graph and output-layout inspection |
 | `scripts/test_letterbox_hypothesis.py` | Letterbox repair validation |
 | `scripts/test_yolo26_e2e.py` | E2E parser regression validation |
-| `scripts/collect_latency.py` | Runtime log and latency collection |
 
 ## Minimal Regression Checklist
 

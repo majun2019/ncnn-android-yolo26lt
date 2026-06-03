@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-"""
-基于当前模型自动挖掘 hard negatives（空标签负样本）。
-
-用途：
-- 在“无目标/反光/密集纹理”图中，挑出模型高置信误检样本；
-- 自动生成空标签 txt；
-- 可一键注入到 data/train 继续微调。
-
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -20,9 +9,7 @@ from typing import Iterable, List, Optional
 
 from ultralytics import YOLO
 
-
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
-
 
 @dataclass
 class Candidate:
@@ -32,12 +19,10 @@ class Candidate:
     max_conf: float
     mean_conf: float
 
-
 def iter_images(root: Path) -> Iterable[Path]:
     for p in root.rglob("*"):
         if p.is_file() and p.suffix.lower() in IMG_EXTS:
             yield p
-
 
 def label_path_of(img: Path, images_root: Path, labels_root: Path) -> Optional[Path]:
     try:
@@ -45,7 +30,6 @@ def label_path_of(img: Path, images_root: Path, labels_root: Path) -> Optional[P
     except Exception:
         return None
     return (labels_root / rel).with_suffix(".txt")
-
 
 def is_labeled_positive(label_file: Path) -> bool:
     if not label_file.exists():
@@ -55,7 +39,6 @@ def is_labeled_positive(label_file: Path) -> bool:
     except Exception:
         return False
     return len(txt) > 0
-
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Mine hard negatives from high-confidence false positives")
@@ -160,7 +143,6 @@ def main() -> None:
     manifest = []
     for i, c in enumerate(selected):
         src = Path(c.image)
-        # avoid collisions
         dst_name = f"hn_{i:05d}_{src.name}"
         dst_img = out_imgs / dst_name
         dst_lbl = out_lbls / (Path(dst_name).stem + ".txt")
@@ -228,7 +210,6 @@ def main() -> None:
     print(f"report json: {report_json}")
     print(f"report md  : {report_md}")
     print("done")
-
 
 if __name__ == "__main__":
     main()

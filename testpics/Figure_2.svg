@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="180mm" height="270mm" viewBox="0 0 1800 2700" role="img" aria-labelledby="title desc">
+  <title id="title">Figure 2. Overall System Architecture for Multi-Task Vision Inference on Resource-Constrained Android Devices</title>
+  <desc id="desc">A layered Java-JNI-C++-NCNN architecture for multi-task vision inference, including UI control, JNI bridging, native scheduling, task inference, runtime consistency mechanisms, and low-level dependencies.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f9fbfd"/>
+      <stop offset="100%" stop-color="#eef4f7"/>
+    </linearGradient>
+    <linearGradient id="modelStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#edf5ff"/>
+      <stop offset="100%" stop-color="#dceafa"/>
+    </linearGradient>
+    <linearGradient id="verificationStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ebf8f0"/>
+      <stop offset="100%" stop-color="#daf0e2"/>
+    </linearGradient>
+    <linearGradient id="androidStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff6e4"/>
+      <stop offset="100%" stop-color="#ffe8bd"/>
+    </linearGradient>
+    <linearGradient id="diagnosisStage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f2f7fb"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="9" stdDeviation="9" flood-color="#23303a" flood-opacity="0.14"/>
+    </filter>
+    <marker id="arrow" markerWidth="22" markerHeight="22" refX="18" refY="11" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2,2 L20,11 L2,20 Z" fill="#315b7d"/>
+    </marker>
+    <style><![CDATA[
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 42px; font-weight: 700; fill: #17212b; }
+      .subtitle { font-family: Arial, Helvetica, sans-serif; font-size: 25px; fill: #536170; }
+      .lane { font-family: Arial, Helvetica, sans-serif; font-size: 21px; font-weight: 700; letter-spacing: 1px; fill: #667687; }
+      .stage-title { font-family: Arial, Helvetica, sans-serif; font-size: 30px; font-weight: 700; fill: #182430; }
+      .body { font-family: Arial, Helvetica, sans-serif; font-size: 23px; fill: #314151; }
+      .note { font-family: Arial, Helvetica, sans-serif; font-size: 21px; fill: #526273; }
+      .num { font-family: Arial, Helvetica, sans-serif; font-size: 27px; font-weight: 700; fill: #ffffff; }
+      .tag { font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: 700; fill: #315b7d; }
+      .footer { font-family: Arial, Helvetica, sans-serif; font-size: 20px; fill: #5f6d78; }
+    ]]></style>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="2700" fill="url(#background)"/>
+
+  <rect x="100" y="78" width="1600" height="152" rx="18" fill="#ffffff" stroke="#d7e0ea" stroke-width="3"/>
+  <text x="900" y="136" text-anchor="middle" class="title">Overall System Architecture for Multi-Task Vision Inference</text>
+  <text x="900" y="183" text-anchor="middle" class="subtitle">Java-JNI-C++-NCNN stack with runtime consistency mechanisms</text>
+
+  <text x="160" y="318" text-anchor="middle" class="lane">
+    <tspan x="160" dy="0">APPLICATION</tspan>
+    <tspan x="160" dy="28">CONTROL</tspan>
+  </text>
+  <text x="160" y="670" text-anchor="middle" class="lane">BRIDGE</text>
+  <text x="160" y="1073" text-anchor="middle" class="lane">
+    <tspan x="160" dy="0">NATIVE</tspan>
+    <tspan x="160" dy="28">INFERENCE</tspan>
+  </text>
+  <text x="160" y="1726" text-anchor="middle" class="lane">
+    <tspan x="160" dy="0">CONSISTENCY</tspan>
+    <tspan x="160" dy="28">MECHANISMS</tspan>
+  </text>
+  <text x="160" y="2388" text-anchor="middle" class="lane">DEPENDENCIES</text>
+
+  <!-- Layer 1 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="300" width="1080" height="245" rx="20" fill="url(#modelStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="338" cy="420" r="38" fill="#315b7d"/>
+    <text x="338" y="430" text-anchor="middle" class="num">1</text>
+    <text x="412" y="366" class="stage-title">Java / UI Layer [Java]</text>
+    <text x="412" y="408" class="body">MainActivity</text>
+    <text x="412" y="445" class="note">Task switching: detect / segment / pose / classify / obb</text>
+    <text x="412" y="480" class="note">Backend switching: CPU / GPU(Vulkan/Turnip)</text>
+    <text x="412" y="515" class="note">Threshold adjustment, camera switching, and SurfaceView rendering</text>
+  </g>
+
+  <path d="M810 560 L810 625" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Layer 2 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="640" width="1080" height="330" rx="20" fill="url(#modelStage)" stroke="#89a9cf" stroke-width="3"/>
+    <circle cx="338" cy="805" r="38" fill="#315b7d"/>
+    <text x="338" y="815" text-anchor="middle" class="num">2</text>
+    <text x="412" y="706" class="stage-title">JNI Bridge Layer</text>
+    <text x="412" y="748" class="body">Java native declarations &lt;-&gt; C++ JNIEXPORT implementation</text>
+    <text x="412" y="785" class="note">Java side: YOLO26Ncnn.java</text>
+    <text x="412" y="820" class="note">loadModel() / setDetectThresholds()</text>
+    <text x="412" y="855" class="note">openCamera() / closeCamera() / setOutputWindow()</text>
+    <text x="412" y="890" class="note">C++ side: yolo26ncnn.cpp JNIEXPORT entries</text>
+    <text x="412" y="925" class="note">Type conversion, JavaVM/JNIEnv handles, lifecycle, exceptions</text>
+  </g>
+
+  <path d="M810 985 L810 1048" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Layer 3 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="1063" width="1080" height="245" rx="20" fill="url(#androidStage)" stroke="#d4a047" stroke-width="3"/>
+    <circle cx="338" cy="1185" r="38" fill="#a66b15"/>
+    <text x="338" y="1195" text-anchor="middle" class="num">3</text>
+    <text x="412" y="1129" class="stage-title">C++ Native Scheduling Layer [C++]</text>
+    <text x="412" y="1172" class="body">yolo26ncnn.cpp / yolo26.h</text>
+    <text x="412" y="1209" class="note">Dispatch taskid=0..4 to five task implementations</text>
+    <text x="412" y="1244" class="note">Manage CPU and GPU paths</text>
+    <text x="412" y="1279" class="note">Connect camera callbacks, logs, and drawing</text>
+  </g>
+
+  <path d="M810 1323 L810 1386" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Layer 4 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="1401" width="1080" height="260" rx="20" fill="url(#androidStage)" stroke="#d4a047" stroke-width="3"/>
+    <circle cx="338" cy="1531" r="38" fill="#a66b15"/>
+    <text x="338" y="1541" text-anchor="middle" class="num">4</text>
+    <text x="412" y="1467" class="stage-title">C++ Task Inference Layer [C++]</text>
+    <text x="412" y="1510" class="body">yolo26_det.cpp / seg.cpp / pose.cpp / cls.cpp / obb.cpp</text>
+    <text x="412" y="1547" class="note">Shared: model loading, thresholds, preprocessing, drawing entry</text>
+    <text x="412" y="1582" class="note">Task-specific: bbox / mask / keypoints / Top-K / angle parsing</text>
+    <text x="412" y="1617" class="note">Preserve task semantics while sharing one application pipeline</text>
+  </g>
+
+  <path d="M810 1676 L810 1728" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Layer 5 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="1743" width="1080" height="500" rx="20" fill="url(#verificationStage)" stroke="#79ad83" stroke-width="3"/>
+    <circle cx="338" cy="1993" r="38" fill="#377b45"/>
+    <text x="338" y="2003" text-anchor="middle" class="num">5</text>
+    <text x="412" y="1810" class="stage-title">Consistency Mechanisms Layer [C++, Cross-Cutting]</text>
+    <text x="412" y="1853" class="body">Input-side preprocessing constraints</text>
+    <text x="442" y="1890" class="note">640x640 letterbox, pad_value = 114, square tensor</text>
+    <text x="442" y="1925" class="note">224x224 resize for classification</text>
+    <text x="442" y="1960" class="note">Inverse mapping uses the same integer (p_x, p_y, r)</text>
+    <text x="412" y="2012" class="body">Output-side post-processing consistency mechanisms</text>
+    <text x="442" y="2049" class="note">Probability calibration: temperature T and exponent gamma</text>
+    <text x="442" y="2084" class="note">Per-class Top-K: class-wise candidate limit K_c</text>
+    <text x="442" y="2119" class="note">Semantics-constrained NMS: per-class + exclusive suppression</text>
+    <text x="442" y="2154" class="note">Object-dependent association: PPE-Person overlap thresholds</text>
+    <text x="442" y="2189" class="note">PPE box locking: position and size weighted toward Person boxes</text>
+  </g>
+
+  <path d="M810 2258 L810 2315" stroke="#315b7d" stroke-width="7" fill="none" marker-end="url(#arrow)" stroke-linecap="round"/>
+
+  <!-- Layer 6 -->
+  <g filter="url(#shadow)">
+    <rect x="270" y="2330" width="1080" height="190" rx="20" fill="url(#diagnosisStage)" stroke="#8ca4b8" stroke-width="3"/>
+    <circle cx="338" cy="2425" r="38" fill="#315b7d"/>
+    <text x="338" y="2435" text-anchor="middle" class="num">6</text>
+    <text x="412" y="2400" class="stage-title">Low-Level Dependencies [C/C++ Native Libraries]</text>
+    <text x="412" y="2443" class="body">NCNN + OpenCV-Mobile + Android NDK Camera</text>
+    <text x="412" y="2480" class="note">Optional Vulkan GPU components remain available for extension</text>
+  </g>
+
+  <rect x="270" y="2590" width="1080" height="2" fill="#c8d6e2"/>
+  <text x="270" y="2630" class="footer">The consistency layer is runtime-resident and cross-cuts the five task types; formulas and parameter values are specified in Section 3.3.</text>
+</svg>

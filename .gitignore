@@ -7,6 +7,7 @@
 /revision*
 /*.pdf
 /back/
+/PaperDraft/
 /PaperDrafts/
 
 # Local writing and linting tools.
@@ -18,6 +19,7 @@
 # Local notes, test scratch files, and logs.
 /test/
 /*.log
+/logcat.txt
 *.tmp
 
 # Android build outputs.
@@ -28,6 +30,9 @@
 # Gradle local state.
 /.gradle/
 /gradle/wrapper/gradle-wrapper.jar
+
+# Android machine-local config.
+/local.properties
 
 # IDE settings.
 /.idea/
@@ -49,12 +54,15 @@ __pycache__/
 /data/testdata/
 /runs/
 
-# Paper-only scripts and generated paper figures.
+# Paper-only scripts, benchmark helpers, and generated paper figures.
 /scripts/build_paper_figure_assets.py
 /scripts/build_figure*.py
 /scripts/_*.py
+/scripts/benchmark_yolo26.py
+/scripts/collect_latency.py
 /scripts/download_testdata.py
 /scripts/sensitivity_sweep.py
+/scripts/trace_conversion_pipeline.py
 /testpics/Figure_*.svg
 /testpics/figure8*.png
 /testpics/obbtest.png
