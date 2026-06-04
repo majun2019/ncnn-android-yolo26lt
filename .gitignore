@@ -51,7 +51,7 @@ __pycache__/
 /data/train/
 /data/valid/
 /data/hardneg_pool/
-/data/testdata/
+/data/labels/
 /runs/
 
 # Paper-only scripts, benchmark helpers, and generated paper figures.
